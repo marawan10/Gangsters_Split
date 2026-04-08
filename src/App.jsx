@@ -7,31 +7,37 @@ import DarkModeToggle from './components/DarkModeToggle';
 import { loadExpenses, saveExpenses, clearExpenses } from './utils/storage';
 
 function useIntroSound() {
+  const audioRef = useRef(null);
   const played = useRef(false);
 
   useEffect(() => {
     if (played.current) return;
 
+    // Pre-create and load the audio element (required by iOS Safari)
+    const audio = new Audio('/sound.mp3');
+    audio.preload = 'auto';
+    audio.volume = 0.5;
+    audio.load();
+    audioRef.current = audio;
+
     function play() {
       if (played.current) return;
       played.current = true;
-      const audio = new Audio('/sound.mpeg');
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-      window.removeEventListener('click', play);
-      window.removeEventListener('touchstart', play);
-      window.removeEventListener('keydown', play);
+      audioRef.current?.play().catch(() => {});
+      cleanup();
     }
 
-    window.addEventListener('click', play, { once: true });
-    window.addEventListener('touchstart', play, { once: true });
-    window.addEventListener('keydown', play, { once: true });
+    function cleanup() {
+      ['click', 'touchstart', 'keydown'].forEach((evt) =>
+        window.removeEventListener(evt, play, true),
+      );
+    }
 
-    return () => {
-      window.removeEventListener('click', play);
-      window.removeEventListener('touchstart', play);
-      window.removeEventListener('keydown', play);
-    };
+    ['click', 'touchstart', 'keydown'].forEach((evt) =>
+      window.addEventListener(evt, play, { once: true, capture: true }),
+    );
+
+    return cleanup;
   }, []);
 }
 
