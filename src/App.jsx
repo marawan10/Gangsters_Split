@@ -7,37 +7,46 @@ import DarkModeToggle from './components/DarkModeToggle';
 import { loadExpenses, saveExpenses, clearExpenses } from './utils/storage';
 
 function useIntroSound() {
-  const audioRef = useRef(null);
   const played = useRef(false);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     if (played.current) return;
 
-    // Pre-create and load the audio element (required by iOS Safari)
-    const audio = new Audio('/sound.mp3');
+    // Insert a real <audio> element into the DOM — most compatible
+    // approach across all mobile browsers including Honor/Huawei.
+    const audio = document.createElement('audio');
+    audio.src = '/sound.mp3';
     audio.preload = 'auto';
-    audio.volume = 0.5;
-    audio.load();
+    audio.playsInline = true;
+    audio.setAttribute('playsinline', '');
+    audio.style.display = 'none';
+    document.body.appendChild(audio);
     audioRef.current = audio;
+
+    const events = ['touchend', 'click', 'keydown'];
 
     function play() {
       if (played.current) return;
       played.current = true;
-      audioRef.current?.play().catch(() => {});
+      audio.play().catch(() => {});
       cleanup();
     }
 
     function cleanup() {
-      ['click', 'touchstart', 'keydown'].forEach((evt) =>
+      events.forEach((evt) =>
         window.removeEventListener(evt, play, true),
       );
     }
 
-    ['click', 'touchstart', 'keydown'].forEach((evt) =>
+    events.forEach((evt) =>
       window.addEventListener(evt, play, { once: true, capture: true }),
     );
 
-    return cleanup;
+    return () => {
+      cleanup();
+      audio.remove();
+    };
   }, []);
 }
 
