@@ -103,8 +103,10 @@ export default function Summary({ expenses }) {
             const bal = balances[user];
             const positive = bal > 0.005;
             const negative = bal < -0.005;
+            const emoji = getBalanceEmoji(bal);
             return (
-              <div key={user} className={`rounded-xl border p-2.5 text-center sm:p-4 ${positive ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20' : negative ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-700/50'}`}>
+              <div key={user} className={`relative overflow-hidden rounded-xl border p-2.5 text-center sm:p-4 ${positive ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20' : negative ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-700/50'}`}>
+                <span className="pointer-events-none absolute -bottom-1 -right-1 text-3xl opacity-20 sm:text-4xl">{emoji}</span>
                 <p className="text-[11px] font-medium text-gray-500 sm:text-sm dark:text-gray-400">{SHORT(user)}</p>
                 <p className={`mt-0.5 text-lg font-bold sm:mt-1 sm:text-2xl ${positive ? 'text-emerald-600 dark:text-emerald-400' : negative ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                   {bal > 0 ? '+' : ''}{bal.toFixed(0)}
@@ -155,6 +157,14 @@ export default function Summary({ expenses }) {
       )}
     </motion.div>
   );
+}
+
+function getBalanceEmoji(balance) {
+  if (balance > 100) return '🤑';
+  if (balance > 0.005) return '😎';
+  if (balance < -100) return '😭';
+  if (balance < -0.005) return '💸';
+  return '😌';
 }
 
 function StatBox({ label, value, highlight }) {
