@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Archive, ChevronDown, ChevronUp } from 'lucide-react';
+import { Archive, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 import { USERS, CATEGORIES } from '../utils/constants';
+import { computeNetBalances, computeSettlements } from '../utils/calculations';
 
 const SHORT = (n) => n.replace('El ', '');
 
@@ -16,6 +17,44 @@ function groupByDate(items) {
   return Object.entries(groups)
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([date, expenses]) => ({ date, expenses }));
+}
+
+function getBalanceEmoji(bal) {
+  if (bal > 100) return '🤑';
+  if (bal > 0.005) return '😎';
+  if (bal < -100) return '😭';
+  if (bal < -0.005) return '💸';
+  return '😌';
+}
+
+function shareGroup(expenses, dateLabel) {
+  const balances = computeNetBalances(expenses);
+  const settlements = computeSettlements(balances);
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+
+  const lines = [`💰 *Gangsters Split — ${dateLabel}*`, ''];
+
+  lines.push('*Total paid per person:*');
+  USERS.forEach((u) => {
+    const paid = expenses.reduce((s, e) => s + (e.paidBy[u] || 0), 0);
+    lines.push(`💳 ${u}: ${paid.toFixed(2)}`);
+  });
+  lines.push(`📊 Total: ${total.toFixed(2)}`);
+
+  lines.push('', '*Balances:*');
+  USERS.forEach((u) => {
+    const bal = balances[u];
+    const sign = bal > 0 ? '+' : '';
+    lines.push(`${getBalanceEmoji(bal)} ${u}: ${sign}${bal.toFixed(2)}`);
+  });
+
+  if (settlements.length > 0) {
+    lines.push('', '*Settlement:*');
+    settlements.forEach((s) => lines.push(`➡️ ${s.from} pays ${s.to} → ${s.amount.toFixed(2)}`));
+  }
+
+  const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(lines.join('\n'))}`;
+  window.open(url, '_blank');
 }
 
 function formatGroupDate(dateStr) {
@@ -96,11 +135,23 @@ export default function History({ archive }) {
 
               {/* Grouped by date */}
               <div className="max-h-80 space-y-3 overflow-y-auto">
-                {groups.map((group) => (
+                {groups.map((group) => {
+                  const dateLabel = formatGroupDate(group.date);
+                  const groupTotal = group.expenses.reduce((s, e) => s + e.amount, 0);
+                  return (
                   <div key={group.date}>
-                    <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                      {formatGroupDate(group.date)}
-                    </p>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                        {dateLabel} · {groupTotal.toFixed(0)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => shareGroup(group.expenses, dateLabel)}
+                        className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 transition active:scale-95 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
+                      >
+                        <MessageCircle size={10} /> Send
+                      </button>
+                    </div>
                     <div className="space-y-1">
                       {group.expenses.map((expense) => {
                         const cat = CATEGORIES.find((c) => c.id === expense.category);
@@ -128,7 +179,8 @@ export default function History({ archive }) {
                       })}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </motion.div>
