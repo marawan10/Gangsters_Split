@@ -38,8 +38,8 @@ export default function Summary({ expenses }) {
     USERS.forEach((user) => {
       const bal = balances[user];
       const sign = bal > 0 ? '+' : '';
-      const icon = bal > 0.005 ? '🟢' : bal < -0.005 ? '🔴' : '⚪';
-      lines.push(`${icon} ${user}: ${sign}${bal.toFixed(2)}`);
+      const emoji = getBalanceEmoji(bal);
+      lines.push(`${emoji} ${user}: ${sign}${bal.toFixed(2)}`);
     });
 
     if (settlements.length > 0) {
