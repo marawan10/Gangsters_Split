@@ -1,11 +1,10 @@
-const CACHE_NAME = 'gangsters-v1';
+const CACHE_NAME = 'gangsters-v2';
 
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
   '/favicon.svg',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/icon.png',
   '/sound.mp3',
 ];
 

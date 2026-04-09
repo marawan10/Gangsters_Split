@@ -71,6 +71,27 @@ export default function App() {
     saveExpenses(expenses);
   }, [expenses]);
 
+  useEffect(() => {
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+
+    function purgeExpired() {
+      const cutoff = Date.now() - SIX_HOURS;
+      setExpenses((prev) => {
+        const kept = prev.filter((e) => e.createdAt > cutoff);
+        if (kept.length < prev.length) {
+          setEditingExpense((cur) =>
+            cur && cur.createdAt <= cutoff ? null : cur,
+          );
+        }
+        return kept.length < prev.length ? kept : prev;
+      });
+    }
+
+    purgeExpired();
+    const id = setInterval(purgeExpired, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const addExpense = useCallback((expense) => {
     setExpenses((prev) => [expense, ...prev]);
   }, []);
