@@ -4,13 +4,16 @@ import { motion } from 'framer-motion';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import Summary from './components/Summary';
+import History from './components/History';
 import DarkModeToggle from './components/DarkModeToggle';
 import { USERS } from './utils/constants';
 import {
   subscribeExpenses,
+  subscribeArchive,
   addExpenseToDb,
   updateExpenseInDb,
   deleteExpenseFromDb,
+  archiveExpense,
   clearAllExpensesFromDb,
 } from './utils/firebase';
 
@@ -77,6 +80,7 @@ export default function App() {
     () => localStorage.getItem(IDENTITY_KEY) || null,
   );
   const [expenses, setExpenses] = useState([]);
+  const [archive, setArchive] = useState([]);
   const [dark, toggleDark] = useDarkMode();
   const [editingExpense, setEditingExpense] = useState(null);
   useIntroSound();
@@ -87,26 +91,25 @@ export default function App() {
   }
 
   useEffect(() => {
-    const unsubscribe = subscribeExpenses((list) => {
-      setExpenses(list);
-    });
-    return unsubscribe;
+    const unsub1 = subscribeExpenses(setExpenses);
+    const unsub2 = subscribeArchive(setArchive);
+    return () => { unsub1(); unsub2(); };
   }, []);
 
   useEffect(() => {
     const SIX_HOURS = 6 * 60 * 60 * 1000;
 
-    function purgeExpired() {
+    function archiveExpired() {
       const cutoff = Date.now() - SIX_HOURS;
       expenses.forEach((e) => {
         if (e.createdAt <= cutoff) {
-          deleteExpenseFromDb(e);
+          archiveExpense(e);
         }
       });
     }
 
-    purgeExpired();
-    const id = setInterval(purgeExpired, 60_000);
+    archiveExpired();
+    const id = setInterval(archiveExpired, 60_000);
     return () => clearInterval(id);
   }, [expenses]);
 
@@ -224,6 +227,7 @@ export default function App() {
           onDelete={deleteExpense}
           onEdit={startEdit}
         />
+        <History archive={archive} />
       </main>
 
       {/* Footer */}

@@ -25,20 +25,24 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const expensesRef = ref(db, 'expenses');
+const archiveRef = ref(db, 'archive');
+
+function parseSnapshot(snapshot) {
+  const data = snapshot.val();
+  if (!data) return [];
+  return Object.entries(data)
+    .map(([fbKey, expense]) => ({ ...expense, fbKey }))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
 
 export function subscribeExpenses(callback) {
   const q = query(expensesRef, orderByChild('createdAt'));
-  return onValue(q, (snapshot) => {
-    const data = snapshot.val();
-    if (!data) {
-      callback([]);
-      return;
-    }
-    const list = Object.entries(data)
-      .map(([fbKey, expense]) => ({ ...expense, fbKey }))
-      .sort((a, b) => b.createdAt - a.createdAt);
-    callback(list);
-  });
+  return onValue(q, (snapshot) => callback(parseSnapshot(snapshot)));
+}
+
+export function subscribeArchive(callback) {
+  const q = query(archiveRef, orderByChild('createdAt'));
+  return onValue(q, (snapshot) => callback(parseSnapshot(snapshot)));
 }
 
 export function addExpenseToDb(expense) {
@@ -55,6 +59,15 @@ export function updateExpenseInDb(expense) {
 export function deleteExpenseFromDb(expense) {
   if (!expense.fbKey) return Promise.resolve();
   return remove(ref(db, `expenses/${expense.fbKey}`));
+}
+
+export function archiveExpense(expense) {
+  if (!expense.fbKey) return Promise.resolve();
+  const { fbKey, ...data } = expense;
+  const archiveItemRef = push(archiveRef);
+  return set(archiveItemRef, { ...data, archivedAt: Date.now() }).then(() =>
+    remove(ref(db, `expenses/${fbKey}`)),
+  );
 }
 
 export function clearAllExpensesFromDb() {
