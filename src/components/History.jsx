@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Archive, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
+import { Archive, ChevronDown, ChevronUp, MessageCircle, Trash2 } from 'lucide-react';
 import { USERS, CATEGORIES } from '../utils/constants';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
+import { deleteArchivedExpense } from '../utils/firebase';
 
 const SHORT = (n) => n.replace('El ', '');
 
@@ -144,13 +145,16 @@ export default function History({ archive }) {
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                         {dateLabel} · {groupTotal.toFixed(0)}
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => shareGroup(group.expenses, dateLabel)}
-                        className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 transition active:scale-95 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
-                      >
-                        <MessageCircle size={10} /> Send
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => shareGroup(group.expenses, dateLabel)}
+                          className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 transition active:scale-95 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
+                        >
+                          <MessageCircle size={10} /> Send
+                        </button>
+                        <DeleteGroupBtn expenses={group.expenses} />
+                      </div>
                     </div>
                     <div className="space-y-1">
                       {group.expenses.map((expense) => {
@@ -187,5 +191,32 @@ export default function History({ archive }) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function DeleteGroupBtn({ expenses }) {
+  const [confirm, setConfirm] = useState(false);
+
+  function handleDelete() {
+    if (confirm) {
+      expenses.forEach((e) => deleteArchivedExpense(e));
+    } else {
+      setConfirm(true);
+      setTimeout(() => setConfirm(false), 3000);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleDelete}
+      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition active:scale-95 ${
+        confirm
+          ? 'bg-red-500 text-white'
+          : 'border border-red-200 bg-red-50 text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
+      }`}
+    >
+      <Trash2 size={10} /> {confirm ? 'Sure?' : 'Delete'}
+    </button>
   );
 }

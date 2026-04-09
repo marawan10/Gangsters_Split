@@ -70,6 +70,11 @@ export function archiveExpense(expense) {
   );
 }
 
+export function deleteArchivedExpense(expense) {
+  if (!expense.fbKey) return Promise.resolve();
+  return remove(ref(db, `archive/${expense.fbKey}`));
+}
+
 export function clearAllExpensesFromDb() {
   return set(expensesRef, null);
 }
