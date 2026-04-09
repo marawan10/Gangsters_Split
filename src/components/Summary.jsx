@@ -26,6 +26,14 @@ export default function Summary({ expenses }) {
 
   function buildShareText() {
     const lines = ['💰 *Gangsters Split*', ''];
+
+    lines.push('*Total paid per person:*');
+    USERS.forEach((user) => {
+      lines.push(`💳 ${user}: ${perPersonPaid[user].toFixed(2)}`);
+    });
+    lines.push(`📊 Total: ${totalExpenses.toFixed(2)}`);
+
+    lines.push('');
     lines.push('*Balances:*');
     USERS.forEach((user) => {
       const bal = balances[user];
@@ -33,6 +41,7 @@ export default function Summary({ expenses }) {
       const icon = bal > 0.005 ? '🟢' : bal < -0.005 ? '🔴' : '⚪';
       lines.push(`${icon} ${user}: ${sign}${bal.toFixed(2)}`);
     });
+
     if (settlements.length > 0) {
       lines.push('', '*Settlement:*');
       settlements.forEach((s) => lines.push(`➡️ ${s.from} pays ${s.to} → ${s.amount.toFixed(2)}`));
