@@ -164,7 +164,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
       {/* Category selector */}
       <div className="mb-4">
         <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
-        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+        <div className="grid grid-cols-5 gap-1.5">
           {CATEGORIES.map((cat) => {
             const active = category?.id === cat.id;
             return (
