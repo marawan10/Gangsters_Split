@@ -13,8 +13,6 @@ function useIntroSound() {
   useEffect(() => {
     if (played.current) return;
 
-    // Insert a real <audio> element into the DOM — most compatible
-    // approach across all mobile browsers including Honor/Huawei.
     const audio = document.createElement('audio');
     audio.src = '/sound.mp3';
     audio.preload = 'auto';
@@ -68,6 +66,7 @@ function useDarkMode() {
 export default function App() {
   const [expenses, setExpenses] = useState(loadExpenses);
   const [dark, toggleDark] = useDarkMode();
+  const [editingExpense, setEditingExpense] = useState(null);
   useIntroSound();
 
   useEffect(() => {
@@ -78,13 +77,30 @@ export default function App() {
     setExpenses((prev) => [expense, ...prev]);
   }, []);
 
+  const updateExpense = useCallback((updated) => {
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === updated.id ? updated : e)),
+    );
+    setEditingExpense(null);
+  }, []);
+
   const deleteExpense = useCallback((id) => {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    setEditingExpense((cur) => (cur?.id === id ? null : cur));
+  }, []);
+
+  const startEdit = useCallback((expense) => {
+    setEditingExpense(expense);
+  }, []);
+
+  const cancelEdit = useCallback(() => {
+    setEditingExpense(null);
   }, []);
 
   function handleReset() {
     if (window.confirm('Delete all expenses? This cannot be undone.')) {
       setExpenses([]);
+      setEditingExpense(null);
       clearExpenses();
     }
   }
@@ -117,9 +133,18 @@ export default function App() {
 
       {/* Main content */}
       <main className="mx-auto max-w-2xl space-y-6 px-4 py-6">
-        <ExpenseForm onAdd={addExpense} />
+        <ExpenseForm
+          onAdd={addExpense}
+          onUpdate={updateExpense}
+          editingExpense={editingExpense}
+          onCancelEdit={cancelEdit}
+        />
         <Summary expenses={expenses} />
-        <ExpenseList expenses={expenses} onDelete={deleteExpense} />
+        <ExpenseList
+          expenses={expenses}
+          onDelete={deleteExpense}
+          onEdit={startEdit}
+        />
       </main>
 
       {/* Footer */}

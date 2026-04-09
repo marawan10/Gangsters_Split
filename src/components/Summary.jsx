@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowRight,
   Wallet,
   CheckCircle,
   AlertTriangle,
   Copy,
   Check,
+  TrendingUp,
+  ArrowRight,
 } from 'lucide-react';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { USERS } from '../utils/constants';
@@ -24,6 +25,14 @@ export default function Summary({ expenses }) {
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const totalPaid = expenses.reduce((sum, e) => sum + e.totalPaid, 0);
   const hasMismatch = Math.abs(totalPaid - totalExpenses) > 0.01;
+
+  const perPersonPaid = {};
+  USERS.forEach((u) => {
+    perPersonPaid[u] = expenses.reduce(
+      (sum, e) => sum + (e.paidBy[u] || 0),
+      0,
+    );
+  });
 
   function buildShareText() {
     const lines = ['💰 *Gangsters Split*', ''];
@@ -72,6 +81,24 @@ export default function Summary({ expenses }) {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4"
     >
+      {/* Stats bar */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400">
+          <TrendingUp size={16} />
+          Overview
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatBox label="Total Spent" value={totalExpenses.toFixed(2)} />
+          {USERS.map((u) => (
+            <StatBox
+              key={u}
+              label={`${u.replace('El ', '')} paid`}
+              value={perPersonPaid[u].toFixed(2)}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Net balances */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="mb-4 flex items-center justify-between">
@@ -154,7 +181,7 @@ export default function Summary({ expenses }) {
           })}
         </div>
 
-        {/* Balance integrity check */}
+        {/* Balance integrity */}
         <div className="mt-3 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-700/50">
           <div className="flex items-center gap-2 text-xs">
             {isBalanced ? (
@@ -182,15 +209,14 @@ export default function Summary({ expenses }) {
           <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span>
-              Total paid across all expenses ({totalPaid.toFixed(2)}) doesn't
-              match total expense amounts ({totalExpenses.toFixed(2)}). Some
-              expenses may have mismatched paid values.
+              Total paid ({totalPaid.toFixed(2)}) ≠ total amounts (
+              {totalExpenses.toFixed(2)}).
             </span>
           </div>
         )}
       </div>
 
-      {/* Settlement suggestions */}
+      {/* Settlement */}
       {settlements.length > 0 && (
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
@@ -221,5 +247,18 @@ export default function Summary({ expenses }) {
         </div>
       )}
     </motion.div>
+  );
+}
+
+function StatBox({ label, value }) {
+  return (
+    <div className="rounded-lg bg-gray-50 p-3 text-center dark:bg-gray-700/50">
+      <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm font-bold text-gray-800 dark:text-gray-200">
+        {value}
+      </p>
+    </div>
   );
 }
