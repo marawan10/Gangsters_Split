@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Archive, ChevronDown, ChevronUp } from 'lucide-react';
 import { USERS, CATEGORIES } from '../utils/constants';
-import { computeNetBalances } from '../utils/calculations';
 
 const SHORT = (n) => n.replace('El ', '');
 
@@ -37,7 +36,11 @@ export default function History({ archive }) {
 
   const groups = groupByDate(archive);
   const totalSpent = archive.reduce((sum, e) => sum + e.amount, 0);
-  const balances = computeNetBalances(archive);
+
+  const perPersonPaid = {};
+  USERS.forEach((u) => {
+    perPersonPaid[u] = archive.reduce((sum, e) => sum + (e.paidBy[u] || 0), 0);
+  });
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -77,19 +80,18 @@ export default function History({ archive }) {
             className="overflow-hidden"
           >
             <div className="border-t border-gray-100 px-4 pb-4 pt-3 dark:border-gray-700">
-              {/* All-time balances */}
-              <div className="mb-3 flex gap-2">
-                {USERS.map((u) => {
-                  const bal = balances[u] || 0;
-                  return (
-                    <div key={u} className="flex-1 rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-700/50">
-                      <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{SHORT(u)}</p>
-                      <p className={`text-xs font-bold ${bal > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : bal < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
-                        {bal > 0 ? '+' : ''}{bal.toFixed(0)}
-                      </p>
-                    </div>
-                  );
-                })}
+              {/* Per-person paid + total */}
+              <div className="mb-3 flex gap-1.5">
+                {USERS.map((u) => (
+                  <div key={u} className="flex-1 rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-700/50">
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{SHORT(u)}</p>
+                    <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{perPersonPaid[u].toFixed(0)}</p>
+                  </div>
+                ))}
+                <div className="flex-1 rounded-lg bg-primary-50 p-2 text-center dark:bg-primary-900/20">
+                  <p className="text-[10px] font-medium text-primary-500 dark:text-primary-400">Total</p>
+                  <p className="text-xs font-bold text-primary-700 dark:text-primary-300">{totalSpent.toFixed(0)}</p>
+                </div>
               </div>
 
               {/* Grouped by date */}
