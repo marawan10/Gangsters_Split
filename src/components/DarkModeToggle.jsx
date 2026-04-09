@@ -5,7 +5,7 @@ export default function DarkModeToggle({ dark, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      className="rounded-full border border-gray-200 bg-white p-2 text-gray-600 shadow-sm transition hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition active:scale-90 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
       aria-label="Toggle dark mode"
     >
       <motion.div
@@ -15,7 +15,7 @@ export default function DarkModeToggle({ dark, onToggle }) {
         exit={{ rotate: 90, opacity: 0 }}
         transition={{ duration: 0.2 }}
       >
-        {dark ? <Sun size={18} /> : <Moon size={18} />}
+        {dark ? <Sun size={16} /> : <Moon size={16} />}
       </motion.div>
     </button>
   );
