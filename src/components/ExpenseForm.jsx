@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlusCircle, Check, X, Info, AlertCircle, Save } from 'lucide-react';
-import { USERS } from '../utils/constants';
+import { USERS, CATEGORIES } from '../utils/constants';
 import { splitEvenly } from '../utils/calculations';
 
 const SHORT = (n) => n.replace('El ', '');
 const emptyPaidBy = Object.fromEntries(USERS.map((u) => [u, '']));
 
 export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelEdit }) {
+  const [category, setCategory] = useState(null);
   const [item, setItem] = useState('');
   const [amount, setAmount] = useState('');
   const [participants, setParticipants] = useState([...USERS]);
@@ -16,9 +17,12 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
   const formRef = useRef(null);
 
   const isEditing = !!editingExpense;
+  const isOthers = category?.id === 'others';
 
   useEffect(() => {
     if (editingExpense) {
+      const match = CATEGORIES.find((c) => c.label === editingExpense.item || c.id === editingExpense.category);
+      setCategory(match || CATEGORIES.find((c) => c.id === 'others'));
       setItem(editingExpense.item);
       setAmount(String(editingExpense.amount));
       setParticipants([...editingExpense.participants]);
@@ -33,6 +37,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
   }, [editingExpense]);
 
   function resetForm() {
+    setCategory(null);
     setItem('');
     setAmount('');
     setParticipants([...USERS]);
@@ -77,7 +82,8 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
 
   function validate() {
     const errs = [];
-    if (!item.trim()) errs.push('Enter an item name.');
+    if (!category) errs.push('Select a category.');
+    if (isOthers && !item.trim()) errs.push('Enter an item name.');
     if (totalAmount <= 0) errs.push('Enter an amount greater than 0.');
     if (participants.length === 0) errs.push('Select at least one participant.');
     if (totalPaid === 0) errs.push('Enter who paid.');
@@ -90,16 +96,26 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
     if (errs.length > 0) { setErrors(errs); return; }
     setErrors([]);
 
+    const finalItem = isOthers ? item.trim() : category.label;
     const paidByNumeric = {};
     USERS.forEach((u) => {
       const v = parseFloat(paidBy[u]);
       if (v > 0) paidByNumeric[u] = v;
     });
 
+    const base = {
+      item: finalItem,
+      category: category.id,
+      amount: totalAmount,
+      participants: [...participants],
+      paidBy: paidByNumeric,
+      totalPaid,
+    };
+
     if (isEditing) {
-      onUpdate({ ...editingExpense, item: item.trim(), amount: totalAmount, participants: [...participants], paidBy: paidByNumeric, totalPaid });
+      onUpdate({ ...editingExpense, ...base });
     } else {
-      onAdd({ id: crypto.randomUUID(), item: item.trim(), amount: totalAmount, participants: [...participants], paidBy: paidByNumeric, totalPaid, createdAt: Date.now() });
+      onAdd({ id: crypto.randomUUID(), ...base, createdAt: Date.now() });
     }
     resetForm();
   }
@@ -145,16 +161,45 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
         )}
       </AnimatePresence>
 
-      {/* Item + Amount */}
-      <div className="mb-4 space-y-3">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Item name</label>
-          <input type="text" value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. Dinner, Uber, Groceries" className={inputCls} />
+      {/* Category selector */}
+      <div className="mb-4">
+        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
+        <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+          {CATEGORIES.map((cat) => {
+            const active = category?.id === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => { setCategory(cat); if (cat.id !== 'others') setItem(''); }}
+                className={`flex flex-col items-center gap-0.5 rounded-xl border px-1 py-2 text-center transition active:scale-95 ${
+                  active
+                    ? 'border-primary-400 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/30'
+                    : 'border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'
+                }`}
+              >
+                <span className="text-lg leading-none">{cat.emoji}</span>
+                <span className={`text-[10px] font-medium leading-tight ${active ? 'text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}`}>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Total amount</label>
-          <input type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={inputCls} />
-        </div>
+      </div>
+
+      {/* Item name — only for "Others" */}
+      <AnimatePresence>
+        {isOthers && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
+            <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Item name</label>
+            <input type="text" value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. Dinner, Uber, Groceries" className={inputCls} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Amount */}
+      <div className="mb-4">
+        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Total amount</label>
+        <input type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={inputCls} />
       </div>
 
       {/* Participants */}

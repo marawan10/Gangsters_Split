@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Trash2, ChevronDown, ChevronUp, Pencil, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { computeExpenseBreakdown } from '../utils/calculations';
-import { USERS } from '../utils/constants';
+import { USERS, CATEGORIES } from '../utils/constants';
 import { formatDate } from '../utils/date';
 
 const SHORT = (n) => n.replace('El ', '');
@@ -59,18 +59,23 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-start gap-3 p-3.5 text-left transition active:bg-gray-50 sm:p-4 dark:active:bg-gray-700/50"
       >
-        {/* Left: amount badge */}
+        {/* Left: category emoji badge */}
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700">
-          <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
-            {expense.amount >= 1000 ? `${(expense.amount / 1000).toFixed(1)}k` : expense.amount.toFixed(0)}
+          <span className="text-xl leading-none">
+            {CATEGORIES.find((c) => c.id === expense.category)?.emoji ?? '📦'}
           </span>
         </div>
 
         {/* Middle: info */}
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-            {expense.item}
-          </h3>
+          <div className="flex items-baseline gap-2">
+            <h3 className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+              {expense.item}
+            </h3>
+            <span className="shrink-0 text-xs font-bold text-gray-500 dark:text-gray-400">
+              {expense.amount >= 1000 ? `${(expense.amount / 1000).toFixed(1)}k` : expense.amount.toFixed(0)}
+            </span>
+          </div>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
             {payerSummary}
           </p>

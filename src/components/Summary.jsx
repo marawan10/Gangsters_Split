@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, CheckCircle, AlertTriangle, Copy, Check, TrendingUp } from 'lucide-react';
+import { Wallet, CheckCircle, AlertTriangle, TrendingUp, MessageCircle } from 'lucide-react';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { USERS } from '../utils/constants';
 
@@ -9,7 +8,6 @@ const SHORT = (n) => n.replace('El ', '');
 export default function Summary({ expenses }) {
   const balances = computeNetBalances(expenses);
   const settlements = computeSettlements(balances);
-  const [copied, setCopied] = useState(false);
 
   if (expenses.length === 0) return null;
 
@@ -49,20 +47,10 @@ export default function Summary({ expenses }) {
     return lines.join('\n');
   }
 
-  async function handleCopy() {
+  function handleWhatsAppShare() {
     const text = buildShareText();
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
   }
 
   return (
@@ -86,14 +74,8 @@ export default function Summary({ expenses }) {
           <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 sm:text-lg dark:text-white">
             <Wallet size={18} /> Balances
           </h2>
-          <button onClick={handleCopy} className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition active:scale-95 ${copied ? 'border-emerald-300 bg-emerald-50 text-emerald-600 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'}`}>
-            <AnimatePresence mode="wait">
-              {copied ? (
-                <motion.span key="check" initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-1"><Check size={13} /> Copied!</motion.span>
-              ) : (
-                <motion.span key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-1"><Copy size={13} /> Share</motion.span>
-              )}
-            </AnimatePresence>
+          <button onClick={handleWhatsAppShare} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-700 transition active:scale-95 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40">
+            <MessageCircle size={13} /> WhatsApp
           </button>
         </div>
 
@@ -147,7 +129,7 @@ export default function Summary({ expenses }) {
             {settlements.map((s, i) => (
               <motion.div key={`${s.from}-${s.to}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 dark:bg-gray-700/50">
                 <span className="text-sm font-semibold text-red-500 dark:text-red-400">{SHORT(s.from)}</span>
-                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-gray-300 dark:text-gray-600"><path fill="currentColor" d="M4 12h16m-4-4 4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-gray-300 dark:text-gray-600"><path d="M4 12h16m-4-4 4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                 <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{SHORT(s.to)}</span>
                 <span className="ml-auto text-base font-bold text-gray-900 sm:text-lg dark:text-white">{s.amount.toFixed(2)}</span>
               </motion.div>
