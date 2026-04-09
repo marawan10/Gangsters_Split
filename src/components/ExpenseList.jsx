@@ -8,14 +8,7 @@ import { formatDate } from '../utils/date';
 const SHORT = (n) => n.replace('El ', '');
 
 export default function ExpenseList({ expenses, onDelete, onEdit }) {
-  if (expenses.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-600">
-        <p className="text-sm text-gray-400 dark:text-gray-500">No expenses yet</p>
-        <p className="mt-1 text-xs text-gray-300 dark:text-gray-600">Add one above to get started</p>
-      </div>
-    );
-  }
+  if (expenses.length === 0) return null;
 
   return (
     <div className="space-y-2.5">
