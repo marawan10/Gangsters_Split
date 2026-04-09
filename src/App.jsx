@@ -4,7 +4,13 @@ import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import Summary from './components/Summary';
 import DarkModeToggle from './components/DarkModeToggle';
-import { loadExpenses, saveExpenses, clearExpenses } from './utils/storage';
+import {
+  subscribeExpenses,
+  addExpenseToDb,
+  updateExpenseInDb,
+  deleteExpenseFromDb,
+  clearAllExpensesFromDb,
+} from './utils/firebase';
 
 function useIntroSound() {
   const played = useRef(false);
@@ -62,51 +68,49 @@ function useDarkMode() {
 }
 
 export default function App() {
-  const [expenses, setExpenses] = useState(loadExpenses);
+  const [expenses, setExpenses] = useState([]);
   const [dark, toggleDark] = useDarkMode();
   const [editingExpense, setEditingExpense] = useState(null);
   useIntroSound();
 
   useEffect(() => {
-    saveExpenses(expenses);
-  }, [expenses]);
+    const unsubscribe = subscribeExpenses((list) => {
+      setExpenses(list);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const SIX_HOURS = 6 * 60 * 60 * 1000;
 
     function purgeExpired() {
       const cutoff = Date.now() - SIX_HOURS;
-      setExpenses((prev) => {
-        const kept = prev.filter((e) => e.createdAt > cutoff);
-        if (kept.length < prev.length) {
-          setEditingExpense((cur) =>
-            cur && cur.createdAt <= cutoff ? null : cur,
-          );
+      expenses.forEach((e) => {
+        if (e.createdAt <= cutoff) {
+          deleteExpenseFromDb(e);
         }
-        return kept.length < prev.length ? kept : prev;
       });
     }
 
     purgeExpired();
     const id = setInterval(purgeExpired, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [expenses]);
 
   const addExpense = useCallback((expense) => {
-    setExpenses((prev) => [expense, ...prev]);
+    addExpenseToDb(expense);
   }, []);
 
   const updateExpense = useCallback((updated) => {
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === updated.id ? updated : e)),
-    );
+    updateExpenseInDb(updated);
     setEditingExpense(null);
   }, []);
 
   const deleteExpense = useCallback((id) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    const expense = expenses.find((e) => e.id === id);
+    if (expense) deleteExpenseFromDb(expense);
     setEditingExpense((cur) => (cur?.id === id ? null : cur));
-  }, []);
+  }, [expenses]);
 
   const startEdit = useCallback((expense) => {
     setEditingExpense(expense);
@@ -118,9 +122,8 @@ export default function App() {
 
   function handleReset() {
     if (window.confirm('Delete all expenses? This cannot be undone.')) {
-      setExpenses([]);
       setEditingExpense(null);
-      clearExpenses();
+      clearAllExpensesFromDb();
     }
   }
 
