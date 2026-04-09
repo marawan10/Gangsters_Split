@@ -88,13 +88,39 @@ export default function App() {
   function pickIdentity(user) {
     localStorage.setItem(IDENTITY_KEY, user);
     setCurrentUser(user);
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }
 
+  const prevExpenseCount = useRef(0);
+  const initialLoad = useRef(true);
+
   useEffect(() => {
-    const unsub1 = subscribeExpenses(setExpenses);
+    const unsub1 = subscribeExpenses((list) => {
+      if (initialLoad.current) {
+        initialLoad.current = false;
+        prevExpenseCount.current = list.length;
+        setExpenses(list);
+        return;
+      }
+
+      if (list.length > prevExpenseCount.current && currentUser) {
+        const newest = list[0];
+        if (newest?.addedBy && newest.addedBy !== currentUser) {
+          const title = 'Gangsters Split';
+          const body = `${SHORT(newest.addedBy)} added ${newest.item} — ${newest.amount.toFixed(0)}`;
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body, icon: '/icon.png' });
+          }
+        }
+      }
+      prevExpenseCount.current = list.length;
+      setExpenses(list);
+    });
     const unsub2 = subscribeArchive(setArchive);
     return () => { unsub1(); unsub2(); };
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     const SIX_HOURS = 6 * 60 * 60 * 1000;
