@@ -90,6 +90,11 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
                 );
               })}
             </div>
+            {expense.addedBy && (
+              <span className="text-[10px] font-medium text-primary-500 dark:text-primary-400">
+                {SHORT(expense.addedBy)}
+              </span>
+            )}
             <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
               <Clock size={9} />{formatDate(expense.createdAt)}
             </span>

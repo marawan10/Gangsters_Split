@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import Summary from './components/Summary';
 import DarkModeToggle from './components/DarkModeToggle';
+import { USERS } from './utils/constants';
 import {
   subscribeExpenses,
   addExpenseToDb,
@@ -11,6 +13,9 @@ import {
   deleteExpenseFromDb,
   clearAllExpensesFromDb,
 } from './utils/firebase';
+
+const IDENTITY_KEY = 'gangsters-identity';
+const SHORT = (n) => n.replace('El ', '');
 
 function useIntroSound() {
   const played = useRef(false);
@@ -68,10 +73,18 @@ function useDarkMode() {
 }
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(
+    () => localStorage.getItem(IDENTITY_KEY) || null,
+  );
   const [expenses, setExpenses] = useState([]);
   const [dark, toggleDark] = useDarkMode();
   const [editingExpense, setEditingExpense] = useState(null);
   useIntroSound();
+
+  function pickIdentity(user) {
+    localStorage.setItem(IDENTITY_KEY, user);
+    setCurrentUser(user);
+  }
 
   useEffect(() => {
     const unsubscribe = subscribeExpenses((list) => {
@@ -127,6 +140,44 @@ export default function App() {
     }
   }
 
+  if (!currentUser) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 text-center dark:bg-gray-900">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-sm"
+        >
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-100 dark:bg-primary-900/40">
+              <Sparkles size={32} className="text-primary-600 dark:text-primary-400" />
+            </div>
+          </div>
+          <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
+            Gangsters Split
+          </h1>
+          <p className="mb-8 text-sm text-gray-500 dark:text-gray-400">
+            Who are you?
+          </p>
+          <div className="space-y-3">
+            {USERS.map((user) => (
+              <button
+                key={user}
+                onClick={() => pickIdentity(user)}
+                className="flex h-14 w-full items-center justify-center rounded-2xl border border-gray-200 bg-white text-base font-semibold text-gray-900 shadow-sm transition active:scale-[0.97] hover:border-primary-400 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:border-primary-600 dark:hover:bg-primary-900/20"
+              >
+                {user}
+              </button>
+            ))}
+          </div>
+          <p className="mt-6 text-[11px] text-gray-400 dark:text-gray-600">
+            You only pick this once
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 transition-colors dark:bg-gray-900 dark:text-gray-100">
       {/* Header */}
@@ -141,6 +192,9 @@ export default function App() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
+              {SHORT(currentUser)}
+            </span>
             {expenses.length > 0 && (
               <button
                 onClick={handleReset}
@@ -162,6 +216,7 @@ export default function App() {
           onUpdate={updateExpense}
           editingExpense={editingExpense}
           onCancelEdit={cancelEdit}
+          currentUser={currentUser}
         />
         <Summary expenses={expenses} />
         <ExpenseList

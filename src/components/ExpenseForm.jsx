@@ -7,7 +7,7 @@ import { splitEvenly } from '../utils/calculations';
 const SHORT = (n) => n.replace('El ', '');
 const emptyPaidBy = Object.fromEntries(USERS.map((u) => [u, '']));
 
-export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelEdit }) {
+export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelEdit, currentUser }) {
   const [category, setCategory] = useState(null);
   const [item, setItem] = useState('');
   const [amount, setAmount] = useState('');
@@ -115,7 +115,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
     if (isEditing) {
       onUpdate({ ...editingExpense, ...base });
     } else {
-      onAdd({ id: crypto.randomUUID(), ...base, createdAt: Date.now() });
+      onAdd({ id: crypto.randomUUID(), ...base, addedBy: currentUser, createdAt: Date.now() });
     }
     resetForm();
   }
