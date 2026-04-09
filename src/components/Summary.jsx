@@ -5,7 +5,7 @@ import { USERS } from '../utils/constants';
 
 const SHORT = (n) => n.replace('El ', '');
 
-export default function Summary({ expenses }) {
+export default function Summary({ expenses, onArchiveAll }) {
   const balances = computeNetBalances(expenses);
   const settlements = computeSettlements(balances);
 
@@ -51,6 +51,7 @@ export default function Summary({ expenses }) {
     const text = buildShareText();
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
+    if (onArchiveAll) onArchiveAll();
   }
 
   return (

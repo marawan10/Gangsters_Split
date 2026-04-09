@@ -128,6 +128,11 @@ export default function App() {
     setEditingExpense((cur) => (cur?.id === id ? null : cur));
   }, [expenses]);
 
+  const archiveAll = useCallback(() => {
+    setEditingExpense(null);
+    expenses.forEach((e) => archiveExpense(e));
+  }, [expenses]);
+
   const startEdit = useCallback((expense) => {
     setEditingExpense(expense);
   }, []);
@@ -221,7 +226,7 @@ export default function App() {
           onCancelEdit={cancelEdit}
           currentUser={currentUser}
         />
-        <Summary expenses={expenses} />
+        <Summary expenses={expenses} onArchiveAll={archiveAll} />
         <ExpenseList
           expenses={expenses}
           onDelete={deleteExpense}
