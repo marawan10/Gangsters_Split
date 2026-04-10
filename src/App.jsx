@@ -224,10 +224,8 @@ export default function App() {
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-gray-200/80 bg-white/80 backdrop-blur-xl dark:border-gray-700/80 dark:bg-gray-900/80">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/40">
-              <Sparkles size={18} className="text-primary-600 dark:text-primary-400" />
-            </div>
+          <div className="flex items-center gap-2">
+            <img src="/icon.png" alt="" className="h-7 w-7 rounded-lg" />
             <h1 className="text-base font-bold tracking-tight sm:text-lg">
               Gangsters Split
             </h1>
@@ -254,25 +252,25 @@ export default function App() {
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6">
         {/* Mode toggle */}
         {!editingExpense && (
-          <div className="flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setFormMode('quick')}
-              className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition ${
+              className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-2xl border text-sm font-medium transition active:scale-[0.97] ${
                 formMode === 'quick'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 dark:text-gray-400'
+                  ? 'border-primary-400 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
+                  : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
               }`}
             >
-              Quick Add
+              ⚡ Quick Add
             </button>
             <button
               type="button"
               onClick={() => setFormMode('trip')}
-              className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition ${
+              className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-2xl border text-sm font-medium transition active:scale-[0.97] ${
                 formMode === 'trip'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 dark:text-gray-400'
+                  ? 'border-primary-400 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
+                  : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
               }`}
             >
               🛒 Shopping Trip

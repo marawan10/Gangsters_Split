@@ -93,10 +93,9 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
       onSubmit={handleSubmit}
       className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-700 dark:bg-gray-800"
     >
-      <div className="mb-4 flex items-center gap-2.5">
-        <ShoppingCart size={18} className="text-primary-600 dark:text-primary-400" />
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white">Shopping Trip</h2>
-      </div>
+      <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">
+        Shopping Trip
+      </h2>
 
       {/* Errors */}
       <AnimatePresence>
@@ -143,13 +142,14 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-700/40"
           >
-            <div className="mb-2 flex gap-2">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="shrink-0 text-xs font-medium text-gray-400 dark:text-gray-500">{idx + 1}.</span>
               <input
                 type="text"
                 value={item.name}
                 onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                placeholder={`Item ${idx + 1}`}
-                className={inputCls}
+                placeholder="Item name"
+                className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:ring-primary-800"
               />
               <input
                 type="number"
@@ -158,21 +158,22 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
                 inputMode="decimal"
                 value={item.amount}
                 onChange={(e) => updateItem(item.id, 'amount', e.target.value)}
-                placeholder="0"
-                className={`${inputCls} w-24 shrink-0`}
+                placeholder="0.00"
+                className="w-20 shrink-0 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:ring-primary-800"
               />
               {items.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeItem(item.id)}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-300 transition active:scale-95 hover:bg-red-50 hover:text-red-400 dark:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-300 transition active:scale-95 hover:text-red-400 dark:text-gray-600 dark:hover:text-red-400"
                 >
                   <Trash2 size={14} />
                 </button>
               )}
             </div>
             {/* For whom */}
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">For:</span>
               {USERS.map((user) => {
                 const active = item.forWhom.includes(user);
                 return (
@@ -180,13 +181,13 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
                     key={user}
                     type="button"
                     onClick={() => toggleForWhom(item.id, user)}
-                    className={`flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[11px] font-medium transition active:scale-95 ${
+                    className={`flex h-7 items-center justify-center gap-1 rounded-lg px-3 text-[11px] font-medium transition active:scale-95 ${
                       active
                         ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                        : 'bg-gray-200/60 text-gray-400 line-through dark:bg-gray-600 dark:text-gray-500'
+                        : 'bg-gray-200/50 text-gray-400 line-through dark:bg-gray-600 dark:text-gray-500'
                     }`}
                   >
-                    {active ? <Check size={10} /> : <X size={10} />}
+                    {active ? <Check size={9} /> : <X size={9} />}
                     {SHORT(user)}
                   </button>
                 );
@@ -207,24 +208,19 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
       {/* Live summary */}
       <AnimatePresence>
         {totalAmount > 0 && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-700/40">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Breakdown — {SHORT(payer)} paid {totalAmount.toFixed(0)}
-            </p>
-            <div className="space-y-1">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
+            <div className="flex gap-1.5">
               {USERS.map((u) => {
                 const owes = Math.round(perPerson[u] * 100) / 100;
-                const paid = u === payer ? totalAmount : 0;
-                const net = Math.round((paid - owes) * 100) / 100;
+                const isPayer = u === payer;
+                const net = Math.round(((isPayer ? totalAmount : 0) - owes) * 100) / 100;
                 return (
-                  <div key={u} className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-gray-600 dark:text-gray-300">{SHORT(u)}</span>
-                    <div className="flex items-center gap-4">
-                      <span className="w-14 text-right text-gray-400">owes {owes.toFixed(0)}</span>
-                      <span className={`w-16 text-right font-semibold ${net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
-                        {net > 0 ? '+' : ''}{net.toFixed(0)}
-                      </span>
-                    </div>
+                  <div key={u} className={`flex-1 rounded-xl p-2.5 text-center ${net > 0.005 ? 'bg-emerald-50 dark:bg-emerald-900/20' : net < -0.005 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
+                    <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{SHORT(u)}</p>
+                    <p className={`text-sm font-bold ${net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
+                      {net > 0 ? '+' : ''}{net.toFixed(0)}
+                    </p>
+                    <p className="text-[9px] text-gray-400 dark:text-gray-500">{owes > 0 ? `owes ${owes.toFixed(0)}` : '—'}</p>
                   </div>
                 );
               })}

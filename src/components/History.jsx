@@ -87,26 +87,16 @@ export default function History({ archive }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-4 py-3.5 text-left transition active:bg-gray-50 dark:active:bg-gray-700/50"
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition active:bg-gray-50 dark:active:bg-gray-700/50"
       >
-        <div className="flex items-center gap-2.5">
-          <Archive size={16} className="text-gray-400 dark:text-gray-500" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            History
-          </span>
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-            {archive.length}
-          </span>
+        <div className="flex items-center gap-2">
+          <Archive size={15} className="text-gray-400 dark:text-gray-500" />
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">History</span>
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-500 dark:bg-gray-700 dark:text-gray-400">{archive.length}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
-            {totalSpent.toFixed(0)} total
-          </span>
-          {open ? (
-            <ChevronUp size={16} className="text-gray-300 dark:text-gray-600" />
-          ) : (
-            <ChevronDown size={16} className="text-gray-300 dark:text-gray-600" />
-          )}
+          <span className="text-[11px] font-bold tabular-nums text-gray-400 dark:text-gray-500">{totalSpent.toFixed(0)}</span>
+          {open ? <ChevronUp size={16} className="text-gray-300 dark:text-gray-600" /> : <ChevronDown size={16} className="text-gray-300 dark:text-gray-600" />}
         </div>
       </button>
 
@@ -123,14 +113,14 @@ export default function History({ archive }) {
               {/* Per-person paid + total */}
               <div className="mb-3 flex gap-1.5">
                 {USERS.map((u) => (
-                  <div key={u} className="flex-1 rounded-lg bg-gray-50 p-2 text-center dark:bg-gray-700/50">
+                  <div key={u} className="flex-1 rounded-xl bg-gray-50 p-2.5 text-center dark:bg-gray-700/50">
                     <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{SHORT(u)}</p>
-                    <p className="text-xs font-bold text-gray-700 dark:text-gray-200">{perPersonPaid[u].toFixed(0)}</p>
+                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{perPersonPaid[u].toFixed(0)}</p>
                   </div>
                 ))}
-                <div className="flex-1 rounded-lg bg-primary-50 p-2 text-center dark:bg-primary-900/20">
+                <div className="flex-1 rounded-xl bg-primary-50 p-2.5 text-center dark:bg-primary-900/20">
                   <p className="text-[10px] font-medium text-primary-500 dark:text-primary-400">Total</p>
-                  <p className="text-xs font-bold text-primary-700 dark:text-primary-300">{totalSpent.toFixed(0)}</p>
+                  <p className="text-sm font-bold text-primary-700 dark:text-primary-300">{totalSpent.toFixed(0)}</p>
                 </div>
               </div>
 
@@ -142,14 +132,17 @@ export default function History({ archive }) {
                   return (
                   <div key={group.date}>
                     <div className="mb-1.5 flex items-center justify-between">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                        {dateLabel} · {groupTotal.toFixed(0)}
-                      </p>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                          {dateLabel}
+                        </p>
+                        <span className="text-[10px] font-bold tabular-nums text-gray-300 dark:text-gray-600">{groupTotal.toFixed(0)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => shareGroup(group.expenses, dateLabel)}
-                          className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 transition active:scale-95 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
+                          className="flex h-6 items-center gap-1 rounded-lg bg-[#25D366] px-2 text-[10px] font-semibold text-white transition active:scale-95"
                         >
                           <MessageCircle size={10} /> Send
                         </button>
@@ -210,13 +203,13 @@ function DeleteGroupBtn({ expenses }) {
     <button
       type="button"
       onClick={handleDelete}
-      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition active:scale-95 ${
+      className={`flex h-6 items-center gap-1 rounded-lg px-2 text-[10px] font-semibold transition active:scale-95 ${
         confirm
           ? 'bg-red-500 text-white'
-          : 'border border-red-200 bg-red-50 text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
+          : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
       }`}
     >
-      <Trash2 size={10} /> {confirm ? 'Sure?' : 'Delete'}
+      <Trash2 size={10} /> {confirm ? 'Sure?' : ''}
     </button>
   );
 }

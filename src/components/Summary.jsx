@@ -75,8 +75,8 @@ export default function Summary({ expenses, onArchiveAll }) {
           <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 sm:text-lg dark:text-white">
             <Wallet size={18} /> Balances
           </h2>
-          <button onClick={handleWhatsAppShare} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-700 transition active:scale-95 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40">
-            <MessageCircle size={13} /> WhatsApp
+          <button onClick={handleWhatsAppShare} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#25D366] px-3.5 text-xs font-semibold text-white shadow-sm transition active:scale-95 hover:bg-[#1fbe5a]">
+            <MessageCircle size={14} /> Share
           </button>
         </div>
 
@@ -125,14 +125,14 @@ export default function Summary({ expenses, onArchiveAll }) {
       {/* Settlements */}
       {settlements.length > 0 && (
         <div className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm sm:p-5 dark:border-gray-700 dark:bg-gray-800">
-          <h2 className="mb-3 text-base font-semibold text-gray-900 sm:text-lg dark:text-white">Settlement</h2>
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Settlement Plan</h2>
           <div className="space-y-2">
             {settlements.map((s, i) => (
-              <motion.div key={`${s.from}-${s.to}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 dark:bg-gray-700/50">
-                <span className="text-sm font-semibold text-red-500 dark:text-red-400">{SHORT(s.from)}</span>
-                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-gray-300 dark:text-gray-600"><path d="M4 12h16m-4-4 4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{SHORT(s.to)}</span>
-                <span className="ml-auto text-base font-bold text-gray-900 sm:text-lg dark:text-white">{s.amount.toFixed(2)}</span>
+              <motion.div key={`${s.from}-${s.to}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-center gap-3 rounded-xl bg-gray-50 px-3.5 py-3 dark:bg-gray-700/50">
+                <span className="text-sm font-bold text-red-500 dark:text-red-400">{SHORT(s.from)}</span>
+                <span className="text-xs text-gray-400">→</span>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{SHORT(s.to)}</span>
+                <span className="ml-auto text-base font-extrabold tabular-nums text-gray-900 dark:text-white">{s.amount.toFixed(0)}</span>
               </motion.div>
             ))}
           </div>

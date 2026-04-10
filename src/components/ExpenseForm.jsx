@@ -142,8 +142,8 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
           {isEditing ? 'Edit Expense' : 'Add Expense'}
         </h2>
         {isEditing && (
-          <button type="button" onClick={handleCancel} className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition active:scale-95 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
-            Cancel
+          <button type="button" onClick={handleCancel} className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition active:scale-95 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+            <X size={13} /> Cancel
           </button>
         )}
       </div>
@@ -164,7 +164,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
       {/* Category selector */}
       <div className="mb-4">
         <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-5 gap-2">
           {CATEGORIES.map((cat) => {
             const active = category?.id === cat.id;
             return (
@@ -172,14 +172,14 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
                 key={cat.id}
                 type="button"
                 onClick={() => { setCategory(cat); if (cat.id !== 'others') setItem(''); }}
-                className={`flex flex-col items-center gap-0.5 rounded-xl border px-1 py-2 text-center transition active:scale-95 ${
+                className={`flex flex-col items-center gap-1 rounded-2xl border py-2.5 text-center transition active:scale-95 ${
                   active
-                    ? 'border-primary-400 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/30'
+                    ? 'border-primary-400 bg-primary-50 shadow-sm dark:border-primary-600 dark:bg-primary-900/30'
                     : 'border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'
                 }`}
               >
-                <span className="text-lg leading-none">{cat.emoji}</span>
-                <span className={`text-[10px] font-medium leading-tight ${active ? 'text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}`}>{cat.label}</span>
+                <span className="text-xl leading-none">{cat.emoji}</span>
+                <span className={`text-[10px] font-semibold leading-tight ${active ? 'text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}`}>{cat.label}</span>
               </button>
             );
           })}
@@ -242,8 +242,8 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
         <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Who paid?</label>
         <div className="space-y-2">
           {USERS.map((user) => (
-            <div key={user} className="flex items-center gap-3">
-              <span className="w-14 text-right text-sm font-medium text-gray-600 dark:text-gray-400">{SHORT(user)}</span>
+            <div key={user} className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50/50 p-2 dark:border-gray-700 dark:bg-gray-700/30">
+              <span className="w-14 text-center text-xs font-semibold text-gray-600 dark:text-gray-300">{SHORT(user)}</span>
               <input type="number" min="0" step="0.01" inputMode="decimal" value={paidBy[user]} onChange={(e) => handlePaidChange(user, e.target.value)} placeholder="0" className={inputCls} />
             </div>
           ))}
@@ -271,18 +271,15 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
       {/* Preview */}
       <AnimatePresence>
         {showPreview && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-700/40">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Preview</p>
-            <div className="space-y-1">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
+            <div className="flex gap-1.5">
               {previewData.map((d) => (
-                <div key={d.user} className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-gray-600 dark:text-gray-300">{SHORT(d.user)}</span>
-                  <div className="flex items-center gap-4">
-                    <span className="w-14 text-right text-gray-400">owes {d.share.toFixed(2)}</span>
-                    <span className={`w-16 text-right font-semibold ${d.net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : d.net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
-                      {d.net > 0 ? '+' : ''}{d.net.toFixed(2)}
-                    </span>
-                  </div>
+                <div key={d.user} className={`flex-1 rounded-xl p-2.5 text-center ${d.net > 0.005 ? 'bg-emerald-50 dark:bg-emerald-900/20' : d.net < -0.005 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{SHORT(d.user)}</p>
+                  <p className={`text-sm font-bold ${d.net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : d.net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
+                    {d.net > 0 ? '+' : ''}{d.net.toFixed(2)}
+                  </p>
+                  <p className="text-[9px] text-gray-400 dark:text-gray-500">owes {d.share.toFixed(2)}</p>
                 </div>
               ))}
             </div>
