@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ExpenseForm from './components/ExpenseForm';
+import ShoppingTrip from './components/ShoppingTrip';
 import ExpenseList from './components/ExpenseList';
 import Summary from './components/Summary';
 import History from './components/History';
@@ -83,6 +84,7 @@ export default function App() {
   const [archive, setArchive] = useState([]);
   const [dark, toggleDark] = useDarkMode();
   const [editingExpense, setEditingExpense] = useState(null);
+  const [formMode, setFormMode] = useState('quick');
   useIntroSound();
 
   function pickIdentity(user) {
@@ -141,6 +143,11 @@ export default function App() {
 
   const addExpense = useCallback((expense) => {
     addExpenseToDb(expense);
+  }, []);
+
+  const submitTrip = useCallback((expenses) => {
+    expenses.forEach((e) => addExpenseToDb(e));
+    setFormMode('quick');
   }, []);
 
   const updateExpense = useCallback((updated) => {
@@ -245,13 +252,45 @@ export default function App() {
 
       {/* Main */}
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6">
-        <ExpenseForm
-          onAdd={addExpense}
-          onUpdate={updateExpense}
-          editingExpense={editingExpense}
-          onCancelEdit={cancelEdit}
-          currentUser={currentUser}
-        />
+        {/* Mode toggle */}
+        {!editingExpense && (
+          <div className="flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+            <button
+              type="button"
+              onClick={() => setFormMode('quick')}
+              className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition ${
+                formMode === 'quick'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              Quick Add
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormMode('trip')}
+              className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-medium transition ${
+                formMode === 'trip'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              🛒 Shopping Trip
+            </button>
+          </div>
+        )}
+
+        {formMode === 'quick' || editingExpense ? (
+          <ExpenseForm
+            onAdd={addExpense}
+            onUpdate={updateExpense}
+            editingExpense={editingExpense}
+            onCancelEdit={cancelEdit}
+            currentUser={currentUser}
+          />
+        ) : (
+          <ShoppingTrip onSubmitTrip={submitTrip} currentUser={currentUser} />
+        )}
         <Summary expenses={expenses} onArchiveAll={archiveAll} />
         <ExpenseList
           expenses={expenses}
