@@ -3,18 +3,20 @@ import { Trash2, ChevronDown, ChevronUp, Pencil, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { computeExpenseBreakdown } from '../utils/calculations';
 import { USERS, CATEGORIES } from '../utils/constants';
-import { formatDate } from '../utils/date';
+import { formatDateLocalized } from '../utils/date';
+import { useLanguage } from '../utils/i18n';
 
 const SHORT = (n) => n.replace('El ', '');
 
 export default function ExpenseList({ expenses, onDelete, onEdit }) {
+  const { t } = useLanguage();
   if (expenses.length === 0) return null;
 
   return (
     <section>
       <h2 className="mb-2.5 flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-500 dark:bg-gray-700 dark:text-gray-400">{expenses.length}</span>
-        Active Expenses
+        {t('activeExpenses')}
       </h2>
       <div className="space-y-2">
         <AnimatePresence mode="popLayout">
@@ -31,6 +33,7 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const breakdown = computeExpenseBreakdown(expense);
+  const { t, lang } = useLanguage();
 
   const payers = USERS.filter((u) => (expense.paidBy[u] || 0) > 0);
   const payerSummary = payers.map((u) => `${SHORT(u)} ${expense.paidBy[u].toFixed(0)}`).join(' · ');
@@ -87,13 +90,13 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
               <>
                 <span className="text-gray-300 dark:text-gray-600">·</span>
                 <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                  by {SHORT(expense.addedBy)}
+                  {t('by')} {SHORT(expense.addedBy)}
                 </span>
               </>
             )}
             <span className="text-gray-300 dark:text-gray-600">·</span>
             <span className="flex items-center gap-0.5 text-[10px] text-gray-400 dark:text-gray-500">
-              <Clock size={8} />{formatDate(expense.createdAt)}
+              <Clock size={8} />{formatDateLocalized(expense.createdAt, t)}
             </span>
           </div>
         </div>
@@ -119,7 +122,7 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
                       <p className={`text-sm font-bold ${b.net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : b.net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                         {b.net > 0 ? '+' : ''}{b.net.toFixed(2)}
                       </p>
-                      <p className="text-[9px] text-gray-400 dark:text-gray-500">{b.share > 0 ? `owes ${b.share.toFixed(0)}` : '—'}</p>
+                      <p className="text-[9px] text-gray-400 dark:text-gray-500">{b.share > 0 ? `${t('owes')} ${b.share.toFixed(0)}` : '—'}</p>
                     </div>
                   );
                 })}
@@ -128,10 +131,10 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
               {/* Action buttons */}
               <div className="flex gap-2">
                 <button onClick={() => onEdit(expense)} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white text-xs font-medium text-gray-600 transition active:scale-95 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                  <Pencil size={12} /> Edit
+                  <Pencil size={12} /> {t('edit')}
                 </button>
                 <button onClick={handleDelete} className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-medium transition active:scale-95 ${confirmDelete ? 'bg-red-500 text-white' : 'border border-red-200 bg-white text-red-500 hover:bg-red-50 dark:border-red-800 dark:bg-gray-700 dark:text-red-400 dark:hover:bg-red-900/20'}`}>
-                  <Trash2 size={12} /> {confirmDelete ? 'Confirm' : 'Delete'}
+                  <Trash2 size={12} /> {confirmDelete ? t('confirm') : t('delete')}
                 </button>
               </div>
             </div>

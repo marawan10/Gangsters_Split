@@ -4,6 +4,7 @@ import { Archive, ChevronDown, ChevronUp, MessageCircle, Trash2 } from 'lucide-r
 import { USERS, CATEGORIES } from '../utils/constants';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { deleteArchivedExpense } from '../utils/firebase';
+import { useLanguage } from '../utils/i18n';
 
 const SHORT = (n) => n.replace('El ', '');
 
@@ -28,21 +29,21 @@ function getBalanceEmoji(bal) {
   return '😌';
 }
 
-function shareGroup(expenses, dateLabel) {
+function shareGroup(expenses, dateLabel, t) {
   const balances = computeNetBalances(expenses);
   const settlements = computeSettlements(balances);
   const total = expenses.reduce((s, e) => s + e.amount, 0);
 
-  const lines = [`💰 *Gangsters Split — ${dateLabel}*`, ''];
+  const lines = [`💰 *${t('appName')} — ${dateLabel}*`, ''];
 
-  lines.push('*Total paid per person:*');
+  lines.push(`*${t('waTotalPaid')}*`);
   USERS.forEach((u) => {
     const paid = expenses.reduce((s, e) => s + (e.paidBy[u] || 0), 0);
     lines.push(`💳 ${u}: ${paid.toFixed(2)}`);
   });
-  lines.push(`📊 Total: ${total.toFixed(2)}`);
+  lines.push(`📊 ${t('total')}: ${total.toFixed(2)}`);
 
-  lines.push('', '*Balances:*');
+  lines.push('', `*${t('waBalances')}*`);
   USERS.forEach((u) => {
     const bal = balances[u];
     const sign = bal > 0 ? '+' : '';
@@ -50,27 +51,28 @@ function shareGroup(expenses, dateLabel) {
   });
 
   if (settlements.length > 0) {
-    lines.push('', '*Settlement:*');
-    settlements.forEach((s) => lines.push(`➡️ ${s.from} pays ${s.to} → ${s.amount.toFixed(2)}`));
+    lines.push('', `*${t('waSettlement')}*`);
+    settlements.forEach((s) => lines.push(`➡️ ${t('waPays', { from: s.from, to: s.to, amount: s.amount.toFixed(2) })}`));
   }
 
   const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(lines.join('\n'))}`;
   window.open(url, '_blank');
 }
 
-function formatGroupDate(dateStr) {
+function formatGroupDate(dateStr, t) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  if (dateStr === today) return 'Today';
+  if (dateStr === today) return t('today');
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = t('months');
   return `${months[date.getMonth()]} ${date.getDate()}`;
 }
 
 export default function History({ archive }) {
   const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
 
   if (archive.length === 0) return null;
 
@@ -91,7 +93,7 @@ export default function History({ archive }) {
       >
         <div className="flex items-center gap-2">
           <Archive size={15} className="text-gray-400 dark:text-gray-500" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">History</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">{t('history')}</span>
           <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-500 dark:bg-gray-700 dark:text-gray-400">{archive.length}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -119,7 +121,7 @@ export default function History({ archive }) {
                   </div>
                 ))}
                 <div className="flex-1 rounded-xl bg-primary-50 p-2.5 text-center dark:bg-primary-900/20">
-                  <p className="text-[10px] font-medium text-primary-500 dark:text-primary-400">Total</p>
+                  <p className="text-[10px] font-medium text-primary-500 dark:text-primary-400">{t('total')}</p>
                   <p className="text-sm font-bold text-primary-700 dark:text-primary-300">{totalSpent.toFixed(0)}</p>
                 </div>
               </div>
@@ -127,7 +129,7 @@ export default function History({ archive }) {
               {/* Grouped by date */}
               <div className="max-h-80 space-y-3 overflow-y-auto">
                 {groups.map((group) => {
-                  const dateLabel = formatGroupDate(group.date);
+                  const dateLabel = formatGroupDate(group.date, t);
                   const groupTotal = group.expenses.reduce((s, e) => s + e.amount, 0);
                   return (
                   <div key={group.date}>
@@ -141,10 +143,10 @@ export default function History({ archive }) {
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          onClick={() => shareGroup(group.expenses, dateLabel)}
+                          onClick={() => shareGroup(group.expenses, dateLabel, t)}
                           className="flex h-6 items-center gap-1 rounded-lg bg-[#25D366] px-2 text-[10px] font-semibold text-white transition active:scale-95"
                         >
-                          <MessageCircle size={10} /> Send
+                          <MessageCircle size={10} /> {t('send')}
                         </button>
                         <DeleteGroupBtn expenses={group.expenses} />
                       </div>
@@ -164,7 +166,7 @@ export default function History({ archive }) {
                               </p>
                               {expense.addedBy && (
                                 <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                                  by {SHORT(expense.addedBy)}
+                                  {t('by')} {SHORT(expense.addedBy)}
                                 </p>
                               )}
                             </div>
@@ -189,6 +191,7 @@ export default function History({ archive }) {
 
 function DeleteGroupBtn({ expenses }) {
   const [confirm, setConfirm] = useState(false);
+  const { t } = useLanguage();
 
   function handleDelete() {
     if (confirm) {
@@ -209,7 +212,7 @@ function DeleteGroupBtn({ expenses }) {
           : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
       }`}
     >
-      <Trash2 size={10} /> {confirm ? 'Sure?' : ''}
+      <Trash2 size={10} /> {confirm ? t('sure') : ''}
     </button>
   );
 }

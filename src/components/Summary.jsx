@@ -2,10 +2,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Wallet, CheckCircle, AlertTriangle, TrendingUp, MessageCircle } from 'lucide-react';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { USERS } from '../utils/constants';
+import { useLanguage } from '../utils/i18n';
 
 const SHORT = (n) => n.replace('El ', '');
 
 export default function Summary({ expenses, onArchiveAll }) {
+  const { t } = useLanguage();
   const balances = computeNetBalances(expenses);
   const settlements = computeSettlements(balances);
 
@@ -23,16 +25,16 @@ export default function Summary({ expenses, onArchiveAll }) {
   });
 
   function buildShareText() {
-    const lines = ['💰 *Gangsters Split*', ''];
+    const lines = [`💰 *${t('appName')}*`, ''];
 
-    lines.push('*Total paid per person:*');
+    lines.push(`*${t('waTotalPaid')}*`);
     USERS.forEach((user) => {
       lines.push(`💳 ${user}: ${perPersonPaid[user].toFixed(2)}`);
     });
-    lines.push(`📊 Total: ${totalExpenses.toFixed(2)}`);
+    lines.push(`📊 ${t('total')}: ${totalExpenses.toFixed(2)}`);
 
     lines.push('');
-    lines.push('*Balances:*');
+    lines.push(`*${t('waBalances')}*`);
     USERS.forEach((user) => {
       const bal = balances[user];
       const sign = bal > 0 ? '+' : '';
@@ -41,8 +43,8 @@ export default function Summary({ expenses, onArchiveAll }) {
     });
 
     if (settlements.length > 0) {
-      lines.push('', '*Settlement:*');
-      settlements.forEach((s) => lines.push(`➡️ ${s.from} pays ${s.to} → ${s.amount.toFixed(2)}`));
+      lines.push('', `*${t('waSettlement')}*`);
+      settlements.forEach((s) => lines.push(`➡️ ${t('waPays', { from: s.from, to: s.to, amount: s.amount.toFixed(2) })}`));
     }
     return lines.join('\n');
   }
@@ -59,10 +61,10 @@ export default function Summary({ expenses, onArchiveAll }) {
       {/* Stats */}
       <div className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm sm:p-4 dark:border-gray-700 dark:bg-gray-800">
         <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-          <TrendingUp size={14} /> Overview
+          <TrendingUp size={14} /> {t('overview')}
         </h2>
         <div className="flex gap-2">
-          <StatBox label="Total" value={totalExpenses.toFixed(0)} highlight />
+          <StatBox label={t('total')} value={totalExpenses.toFixed(0)} highlight />
           {USERS.map((u) => (
             <StatBox key={u} label={SHORT(u)} value={perPersonPaid[u].toFixed(0)} />
           ))}
@@ -73,10 +75,10 @@ export default function Summary({ expenses, onArchiveAll }) {
       <div className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm sm:p-5 dark:border-gray-700 dark:bg-gray-800">
         <div className="mb-3 flex items-center justify-between sm:mb-4">
           <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900 sm:text-lg dark:text-white">
-            <Wallet size={18} /> Balances
+            <Wallet size={18} /> {t('balances')}
           </h2>
           <button onClick={handleWhatsAppShare} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#25D366] px-3.5 text-xs font-semibold text-white shadow-sm transition active:scale-95 hover:bg-[#1fbe5a]">
-            <MessageCircle size={14} /> Share
+            <MessageCircle size={14} /> {t('share')}
           </button>
         </div>
 
@@ -95,7 +97,7 @@ export default function Summary({ expenses, onArchiveAll }) {
                   {bal > 0 ? '+' : ''}{bal.toFixed(0)}
                 </p>
                 <p className="mt-0.5 text-[10px] text-gray-500 sm:text-xs dark:text-gray-400">
-                  {positive ? 'gets back' : negative ? 'owes' : 'settled'}
+                  {positive ? t('getsBack') : negative ? t('owes') : t('settled')}
                 </p>
               </div>
             );
@@ -106,18 +108,18 @@ export default function Summary({ expenses, onArchiveAll }) {
         <div className="mt-2.5 flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-1.5 sm:mt-3 sm:px-3 sm:py-2 dark:bg-gray-700/50">
           <div className="flex items-center gap-1.5 text-[11px]">
             {isBalanced ? (
-              <><CheckCircle size={12} className="text-emerald-500" /><span className="text-emerald-600 dark:text-emerald-400">Verified ✓</span></>
+              <><CheckCircle size={12} className="text-emerald-500" /><span className="text-emerald-600 dark:text-emerald-400">{t('verified')}</span></>
             ) : (
-              <><AlertTriangle size={12} className="text-amber-500" /><span className="text-amber-600 dark:text-amber-400">Off by {Math.abs(balanceSum).toFixed(2)}</span></>
+              <><AlertTriangle size={12} className="text-amber-500" /><span className="text-amber-600 dark:text-amber-400">{t('offBy', { amount: Math.abs(balanceSum).toFixed(2) })}</span></>
             )}
           </div>
-          <span className="text-[11px] text-gray-400 dark:text-gray-500">{expenses.length} item{expenses.length !== 1 ? 's' : ''}</span>
+          <span className="text-[11px] text-gray-400 dark:text-gray-500">{expenses.length} {expenses.length !== 1 ? t('item_other') : t('item_one')}</span>
         </div>
 
         {hasMismatch && (
           <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-2 text-[11px] text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
             <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-            <span>Paid ({totalPaid.toFixed(2)}) ≠ amounts ({totalExpenses.toFixed(2)})</span>
+            <span>{t('paidNe', { paid: totalPaid.toFixed(2), amount: totalExpenses.toFixed(2) })}</span>
           </div>
         )}
       </div>
@@ -125,14 +127,14 @@ export default function Summary({ expenses, onArchiveAll }) {
       {/* Settlements */}
       {settlements.length > 0 && (
         <div className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm sm:p-5 dark:border-gray-700 dark:bg-gray-800">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Settlement Plan</h2>
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('settlementPlan')}</h2>
           <div className="space-y-2">
             {settlements.map((s, i) => (
               <motion.div key={`${s.from}-${s.to}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-center gap-3 rounded-xl bg-gray-50 px-3.5 py-3 dark:bg-gray-700/50">
                 <span className="text-sm font-bold text-red-500 dark:text-red-400">{SHORT(s.from)}</span>
                 <span className="text-xs text-gray-400">→</span>
                 <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{SHORT(s.to)}</span>
-                <span className="ml-auto text-base font-extrabold tabular-nums text-gray-900 dark:text-white">{s.amount.toFixed(0)}</span>
+                <span className="ms-auto text-base font-extrabold tabular-nums text-gray-900 dark:text-white">{s.amount.toFixed(0)}</span>
               </motion.div>
             ))}
           </div>

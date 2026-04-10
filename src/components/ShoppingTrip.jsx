@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlusCircle, Trash2, ShoppingCart, Check, X, AlertCircle } from 'lucide-react';
 import { USERS } from '../utils/constants';
+import { useLanguage } from '../utils/i18n';
 
 const SHORT = (n) => n.replace('El ', '');
 
@@ -13,6 +14,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
   const [payer, setPayer] = useState(currentUser || USERS[0]);
   const [items, setItems] = useState([emptyItem()]);
   const [errors, setErrors] = useState([]);
+  const { t } = useLanguage();
 
   function addItem() {
     setItems((prev) => [...prev, emptyItem()]);
@@ -51,12 +53,12 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
 
   function validate() {
     const errs = [];
-    if (validItems.length === 0) errs.push('Add at least one item with a name, amount, and who it\'s for.');
+    if (validItems.length === 0) errs.push(t('errTripEmpty'));
     items.forEach((i, idx) => {
       const amt = parseFloat(i.amount) || 0;
-      if (i.name.trim() && amt <= 0) errs.push(`Item ${idx + 1}: enter an amount.`);
-      if (amt > 0 && !i.name.trim()) errs.push(`Item ${idx + 1}: enter a name.`);
-      if ((i.name.trim() || amt > 0) && i.forWhom.length === 0) errs.push(`Item ${idx + 1}: select who it's for.`);
+      if (i.name.trim() && amt <= 0) errs.push(t('errTripAmount', { n: idx + 1 }));
+      if (amt > 0 && !i.name.trim()) errs.push(t('errTripName', { n: idx + 1 }));
+      if ((i.name.trim() || amt > 0) && i.forWhom.length === 0) errs.push(t('errTripFor', { n: idx + 1 }));
     });
     return errs;
   }
@@ -94,7 +96,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
       className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-700 dark:bg-gray-800"
     >
       <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">
-        Shopping Trip
+        {t('shoppingTrip')}
       </h2>
 
       {/* Errors */}
@@ -112,7 +114,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
 
       {/* Who went shopping */}
       <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Who went shopping?</label>
+        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{t('whoWentShopping')}</label>
         <div className="flex gap-2">
           {USERS.map((user) => (
             <button
@@ -134,7 +136,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
 
       {/* Items list */}
       <div className="mb-4 space-y-3">
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Items</label>
+        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{t('items')}</label>
         {items.map((item, idx) => (
           <motion.div
             key={item.id}
@@ -148,7 +150,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
                 type="text"
                 value={item.name}
                 onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                placeholder="Item name"
+                placeholder={t('itemName')}
                 className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:ring-primary-800"
               />
               <input
@@ -173,7 +175,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
             </div>
             {/* For whom */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">For:</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">{t('forLabel')}</span>
               {USERS.map((user) => {
                 const active = item.forWhom.includes(user);
                 return (
@@ -201,7 +203,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
           onClick={addItem}
           className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 text-xs font-medium text-gray-400 transition active:scale-[0.98] hover:border-primary-400 hover:text-primary-500 dark:border-gray-600 dark:text-gray-500 dark:hover:border-primary-600 dark:hover:text-primary-400"
         >
-          <PlusCircle size={14} /> Add item
+          <PlusCircle size={14} /> {t('addItem')}
         </button>
       </div>
 
@@ -220,7 +222,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
                     <p className={`text-sm font-bold ${net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                       {net > 0 ? '+' : ''}{net.toFixed(0)}
                     </p>
-                    <p className="text-[9px] text-gray-400 dark:text-gray-500">{owes > 0 ? `owes ${owes.toFixed(0)}` : '—'}</p>
+                    <p className="text-[9px] text-gray-400 dark:text-gray-500">{owes > 0 ? `${t('owes')} ${owes.toFixed(0)}` : '—'}</p>
                   </div>
                 );
               })}
@@ -234,7 +236,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
         type="submit"
         className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-600 text-sm font-semibold text-white shadow-sm transition active:scale-[0.98] hover:bg-primary-700 focus:outline-none focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-800"
       >
-        <ShoppingCart size={18} /> Add {validItems.length} item{validItems.length !== 1 ? 's' : ''} · {totalAmount.toFixed(0)}
+        <ShoppingCart size={18} /> {t('addNItems', { n: validItems.length, s: validItems.length !== 1 ? 's' : '', total: totalAmount.toFixed(0) })}
       </button>
     </motion.form>
   );

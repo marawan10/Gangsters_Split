@@ -1,0 +1,226 @@
+import { createContext, useContext, useState, useCallback } from 'react';
+
+const LANG_KEY = 'gangsters-lang';
+
+const translations = {
+  en: {
+    appName: 'Gangsters Split',
+    whoAreYou: 'Who are you?',
+    pickOnce: 'You only pick this once',
+    reset: 'Reset',
+    confirmReset: 'Delete all expenses? This cannot be undone.',
+    quickAdd: 'Quick Add',
+    shoppingTrip: 'Shopping Trip',
+
+    // ExpenseForm
+    addExpense: 'Add Expense',
+    editExpense: 'Edit Expense',
+    cancel: 'Cancel',
+    category: 'Category',
+    itemName: 'Item name',
+    itemPlaceholder: 'e.g. Dinner, Uber, Groceries',
+    totalAmount: 'Total amount',
+    whosIncluded: "Who's included?",
+    each: 'each',
+    whoPaid: 'Who paid?',
+    loanWarning_one: "paid but isn't included — treated as a loan.",
+    loanWarning_many: "paid but aren't included — treated as a loan.",
+    paidMismatch: 'Paid ({paid}) ≠ amount ({amount}).',
+    saveChanges: 'Save Changes',
+    owes: 'owes',
+
+    // Validation
+    errCategory: 'Select a category.',
+    errItemName: 'Enter an item name.',
+    errAmount: 'Enter an amount greater than 0.',
+    errParticipant: 'Select at least one participant.',
+    errWhoPaid: 'Enter who paid.',
+
+    // ShoppingTrip
+    whoWentShopping: 'Who went shopping?',
+    items: 'Items',
+    addItem: 'Add item',
+    forLabel: 'For:',
+    addNItems: 'Add {n} item{s} · {total}',
+    errTripEmpty: "Add at least one item with a name, amount, and who it's for.",
+    errTripAmount: 'Item {n}: enter an amount.',
+    errTripName: 'Item {n}: enter a name.',
+    errTripFor: "Item {n}: select who it's for.",
+
+    // ExpenseList
+    activeExpenses: 'Active Expenses',
+    edit: 'Edit',
+    delete: 'Delete',
+    confirm: 'Confirm',
+    by: 'by',
+
+    // Summary
+    overview: 'Overview',
+    total: 'Total',
+    balances: 'Balances',
+    share: 'Share',
+    getsBack: 'gets back',
+    settled: 'settled',
+    verified: 'Verified ✓',
+    offBy: 'Off by {amount}',
+    item_one: 'item',
+    item_other: 'items',
+    settlementPlan: 'Settlement Plan',
+    paidNe: 'Paid ({paid}) ≠ amounts ({amount})',
+
+    // WhatsApp share
+    waTotalPaid: 'Total paid per person:',
+    waBalances: 'Balances:',
+    waSettlement: 'Settlement:',
+    waPays: '{from} pays {to} → {amount}',
+
+    // History
+    history: 'History',
+    send: 'Send',
+    sure: 'Sure?',
+    today: 'Today',
+
+    // Date
+    yesterday: 'Yesterday',
+    daysAgo: '{n} days ago',
+    todayAt: 'Today, {time}',
+    am: 'AM',
+    pm: 'PM',
+    months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+
+    // Categories
+    cat_food: 'Food',
+    cat_transport: 'Transport',
+    cat_shopping: 'Shopping',
+    cat_bills: 'Bills',
+    cat_others: 'Others',
+
+    // Notification
+    notifAdded: '{who} added {item} — {amount}',
+  },
+
+  ar: {
+    appName: 'Gangsters Split',
+    whoAreYou: 'انت مين؟',
+    pickOnce: 'هتختار مرة واحدة بس',
+    reset: 'مسح',
+    confirmReset: 'تمسح كل المصاريف؟ مش هتقدر ترجعها.',
+    quickAdd: 'إضافة سريعة',
+    shoppingTrip: 'رحلة تسوق',
+
+    addExpense: 'أضف مصروف',
+    editExpense: 'تعديل مصروف',
+    cancel: 'إلغاء',
+    category: 'النوع',
+    itemName: 'اسم الحاجة',
+    itemPlaceholder: 'مثلاً: عشا، أوبر، بقالة',
+    totalAmount: 'المبلغ',
+    whosIncluded: 'مين معانا؟',
+    each: 'لكل واحد',
+    whoPaid: 'مين دفع؟',
+    loanWarning_one: 'دفع بس مش مشارك — يعتبر سلف.',
+    loanWarning_many: 'دفعوا بس مش مشاركين — يعتبر سلف.',
+    paidMismatch: 'المدفوع ({paid}) ≠ المبلغ ({amount})',
+    saveChanges: 'حفظ التعديل',
+    owes: 'عليه',
+
+    errCategory: 'اختار نوع.',
+    errItemName: 'اكتب اسم الحاجة.',
+    errAmount: 'اكتب مبلغ أكبر من صفر.',
+    errParticipant: 'اختار شخص واحد على الأقل.',
+    errWhoPaid: 'اكتب مين دفع.',
+
+    whoWentShopping: 'مين اللي راح يشتري؟',
+    items: 'الحاجات',
+    addItem: 'أضف حاجة',
+    forLabel: 'لـ:',
+    addNItems: 'أضف {n} حاجة · {total}',
+    errTripEmpty: 'أضف حاجة واحدة على الأقل باسم ومبلغ ولمين.',
+    errTripAmount: 'حاجة {n}: اكتب المبلغ.',
+    errTripName: 'حاجة {n}: اكتب الاسم.',
+    errTripFor: 'حاجة {n}: اختار لمين.',
+
+    activeExpenses: 'المصاريف الحالية',
+    edit: 'تعديل',
+    delete: 'حذف',
+    confirm: 'تأكيد',
+    by: 'من',
+
+    overview: 'ملخص',
+    total: 'الإجمالي',
+    balances: 'الحسابات',
+    share: 'شير',
+    getsBack: 'له فلوس',
+    owes: 'عليه',
+    settled: 'خلص',
+    verified: 'متظبط ✓',
+    offBy: 'فرق {amount}',
+    item_one: 'حاجة',
+    item_other: 'حاجات',
+    settlementPlan: 'خطة التسوية',
+    paidNe: 'المدفوع ({paid}) ≠ المبلغ ({amount})',
+
+    waTotalPaid: 'اللي كل واحد دفعه:',
+    waBalances: 'الحسابات:',
+    waSettlement: 'التسوية:',
+    waPays: '{from} يدفع لـ {to} → {amount}',
+
+    history: 'السجل',
+    send: 'ابعت',
+    sure: 'متأكد؟',
+    today: 'النهارده',
+
+    yesterday: 'امبارح',
+    daysAgo: 'من {n} أيام',
+    todayAt: 'النهارده، {time}',
+    am: 'ص',
+    pm: 'م',
+    months: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+
+    cat_food: 'أكل',
+    cat_transport: 'مواصلات',
+    cat_shopping: 'تسوق',
+    cat_bills: 'فواتير',
+    cat_others: 'تاني',
+
+    notifAdded: '{who} ضاف {item} — {amount}',
+  },
+};
+
+const LangContext = createContext();
+
+export function LangProvider({ children }) {
+  const [lang, setLangState] = useState(
+    () => localStorage.getItem(LANG_KEY) || 'en',
+  );
+
+  function setLang(l) {
+    localStorage.setItem(LANG_KEY, l);
+    setLangState(l);
+  }
+
+  const t = useCallback(
+    (key, vars) => {
+      let str = translations[lang]?.[key] ?? translations.en[key] ?? key;
+      if (typeof str === 'string' && vars) {
+        Object.entries(vars).forEach(([k, v]) => {
+          str = str.replaceAll(`{${k}}`, v);
+        });
+      }
+      return str;
+    },
+    [lang],
+  );
+
+  const isRTL = lang === 'ar';
+
+  return (
+    <LangContext.Provider value={{ lang, setLang, t, isRTL }}>
+      {children}
+    </LangContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  return useContext(LangContext);
+}

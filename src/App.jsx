@@ -7,7 +7,9 @@ import ExpenseList from './components/ExpenseList';
 import Summary from './components/Summary';
 import History from './components/History';
 import DarkModeToggle from './components/DarkModeToggle';
+import LanguageToggle from './components/LanguageToggle';
 import { USERS } from './utils/constants';
+import { useLanguage } from './utils/i18n';
 import {
   subscribeExpenses,
   subscribeArchive,
@@ -85,6 +87,7 @@ export default function App() {
   const [dark, toggleDark] = useDarkMode();
   const [editingExpense, setEditingExpense] = useState(null);
   const [formMode, setFormMode] = useState('quick');
+  const { t, isRTL } = useLanguage();
   useIntroSound();
 
   function pickIdentity(user) {
@@ -110,8 +113,8 @@ export default function App() {
       if (list.length > prevExpenseCount.current && currentUser) {
         const newest = list[0];
         if (newest?.addedBy && newest.addedBy !== currentUser) {
-          const title = 'Gangsters Split';
-          const body = `${SHORT(newest.addedBy)} added ${newest.item} — ${newest.amount.toFixed(0)}`;
+          const title = t('appName');
+          const body = t('notifAdded', { who: SHORT(newest.addedBy), item: newest.item, amount: newest.amount.toFixed(0) });
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(title, { body, icon: '/icon.png' });
           }
@@ -175,7 +178,7 @@ export default function App() {
   }, []);
 
   function handleReset() {
-    if (window.confirm('Delete all expenses? This cannot be undone.')) {
+    if (window.confirm(t('confirmReset'))) {
       setEditingExpense(null);
       clearAllExpensesFromDb();
     }
@@ -183,7 +186,7 @@ export default function App() {
 
   if (!currentUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 text-center dark:bg-gray-900">
+      <div dir={isRTL ? 'rtl' : 'ltr'} className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 text-center dark:bg-gray-900">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -195,10 +198,10 @@ export default function App() {
             </div>
           </div>
           <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
-            Gangsters Split
+            {t('appName')}
           </h1>
           <p className="mb-8 text-sm text-gray-500 dark:text-gray-400">
-            Who are you?
+            {t('whoAreYou')}
           </p>
           <div className="space-y-3">
             {USERS.map((user) => (
@@ -212,22 +215,25 @@ export default function App() {
             ))}
           </div>
           <p className="mt-6 text-[11px] text-gray-400 dark:text-gray-600">
-            You only pick this once
+            {t('pickOnce')}
           </p>
+          <div className="mt-4 flex justify-center">
+            <LanguageToggle />
+          </div>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 transition-colors dark:bg-gray-900 dark:text-gray-100">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="flex min-h-screen flex-col bg-gray-50 text-gray-900 transition-colors dark:bg-gray-900 dark:text-gray-100">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-gray-200/80 bg-white/80 backdrop-blur-xl dark:border-gray-700/80 dark:bg-gray-900/80">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
             <img src="/icon.png" alt="" className="h-7 w-7 rounded-lg" />
             <h1 className="text-base font-bold tracking-tight sm:text-lg">
-              Gangsters Split
+              {t('appName')}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -240,9 +246,10 @@ export default function App() {
                 className="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-200 bg-white px-3 text-xs font-medium text-red-600 transition active:scale-95 hover:bg-red-50 dark:border-red-800 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
               >
                 <RotateCcw size={13} />
-                Reset
+                {t('reset')}
               </button>
             )}
+            <LanguageToggle />
             <DarkModeToggle dark={dark} onToggle={toggleDark} />
           </div>
         </div>
@@ -262,7 +269,7 @@ export default function App() {
                   : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
               }`}
             >
-              ⚡ Quick Add
+              ⚡ {t('quickAdd')}
             </button>
             <button
               type="button"
@@ -273,7 +280,7 @@ export default function App() {
                   : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
               }`}
             >
-              🛒 Shopping Trip
+              🛒 {t('shoppingTrip')}
             </button>
           </div>
         )}

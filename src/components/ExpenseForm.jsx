@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PlusCircle, Check, X, Info, AlertCircle, Save } from 'lucide-react';
 import { USERS, CATEGORIES } from '../utils/constants';
 import { splitEvenly } from '../utils/calculations';
+import { useLanguage } from '../utils/i18n';
 
 const SHORT = (n) => n.replace('El ', '');
 const emptyPaidBy = Object.fromEntries(USERS.map((u) => [u, '']));
@@ -15,6 +16,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
   const [paidBy, setPaidBy] = useState({ ...emptyPaidBy });
   const [errors, setErrors] = useState([]);
   const formRef = useRef(null);
+  const { t } = useLanguage();
 
   const isEditing = !!editingExpense;
   const isOthers = category?.id === 'others';
@@ -82,11 +84,11 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
 
   function validate() {
     const errs = [];
-    if (!category) errs.push('Select a category.');
-    if (isOthers && !item.trim()) errs.push('Enter an item name.');
-    if (totalAmount <= 0) errs.push('Enter an amount greater than 0.');
-    if (participants.length === 0) errs.push('Select at least one participant.');
-    if (totalPaid === 0) errs.push('Enter who paid.');
+    if (!category) errs.push(t('errCategory'));
+    if (isOthers && !item.trim()) errs.push(t('errItemName'));
+    if (totalAmount <= 0) errs.push(t('errAmount'));
+    if (participants.length === 0) errs.push(t('errParticipant'));
+    if (totalPaid === 0) errs.push(t('errWhoPaid'));
     return errs;
   }
 
@@ -139,11 +141,11 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-          {isEditing ? 'Edit Expense' : 'Add Expense'}
+          {isEditing ? t('editExpense') : t('addExpense')}
         </h2>
         {isEditing && (
           <button type="button" onClick={handleCancel} className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition active:scale-95 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
-            <X size={13} /> Cancel
+            <X size={13} /> {t('cancel')}
           </button>
         )}
       </div>
@@ -163,7 +165,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
 
       {/* Category selector */}
       <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
+        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{t('category')}</label>
         <div className="grid grid-cols-5 gap-2">
           {CATEGORIES.map((cat) => {
             const active = category?.id === cat.id;
@@ -179,7 +181,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
                 }`}
               >
                 <span className="text-xl leading-none">{cat.emoji}</span>
-                <span className={`text-[10px] font-semibold leading-tight ${active ? 'text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}`}>{cat.label}</span>
+                <span className={`text-[10px] font-semibold leading-tight ${active ? 'text-primary-700 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}`}>{t('cat_' + cat.id)}</span>
               </button>
             );
           })}
@@ -190,22 +192,22 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
       <AnimatePresence>
         {isOthers && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
-            <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Item name</label>
-            <input type="text" value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. Dinner, Uber, Groceries" className={inputCls} />
+            <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{t('itemName')}</label>
+            <input type="text" value={item} onChange={(e) => setItem(e.target.value)} placeholder={t('itemPlaceholder')} className={inputCls} />
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Amount */}
       <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Total amount</label>
+        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{t('totalAmount')}</label>
         <input type="number" min="0" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={inputCls} />
       </div>
 
       {/* Participants */}
       <div className="mb-4">
         <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">
-          Who's included?
+          {t('whosIncluded')}
         </label>
         <div className="flex gap-2">
           {USERS.map((user) => {
@@ -231,7 +233,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
         <AnimatePresence>
           {totalAmount > 0 && participants.length > 0 && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-2 text-center text-xs text-primary-600 dark:text-primary-400">
-              {totalAmount.toFixed(2)} ÷ {participants.length} = <span className="font-bold">{shareEach.toFixed(2)} each</span>
+              {totalAmount.toFixed(2)} ÷ {participants.length} = <span className="font-bold">{shareEach.toFixed(2)} {t('each')}</span>
             </motion.p>
           )}
         </AnimatePresence>
@@ -239,7 +241,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
 
       {/* Who paid */}
       <div className="mb-4">
-        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Who paid?</label>
+        <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{t('whoPaid')}</label>
         <div className="space-y-2">
           {USERS.map((user) => (
             <div key={user} className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50/50 p-2 dark:border-gray-700 dark:bg-gray-700/30">
@@ -254,7 +256,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
           {nonParticipantPayers.length > 0 && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-2.5 flex items-start gap-2 overflow-hidden rounded-xl bg-amber-50 p-2.5 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
               <Info size={13} className="mt-0.5 shrink-0" />
-              <span>{nonParticipantPayers.map((e) => SHORT(e.user)).join(', ')} paid but {nonParticipantPayers.length === 1 ? "isn't" : "aren't"} included — treated as a loan.</span>
+              <span>{nonParticipantPayers.map((e) => SHORT(e.user)).join(', ')} {nonParticipantPayers.length === 1 ? t('loanWarning_one') : t('loanWarning_many')}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -262,7 +264,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
           {totalPaid > 0 && totalAmount > 0 && Math.abs(totalPaid - totalAmount) > 0.01 && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-2.5 flex items-start gap-2 overflow-hidden rounded-xl bg-blue-50 p-2.5 text-xs text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
               <Info size={13} className="mt-0.5 shrink-0" />
-              <span>Paid ({totalPaid.toFixed(2)}) ≠ amount ({totalAmount.toFixed(2)}).</span>
+              <span>{t('paidMismatch', { paid: totalPaid.toFixed(2), amount: totalAmount.toFixed(2) })}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -279,7 +281,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
                   <p className={`text-sm font-bold ${d.net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : d.net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                     {d.net > 0 ? '+' : ''}{d.net.toFixed(2)}
                   </p>
-                  <p className="text-[9px] text-gray-400 dark:text-gray-500">owes {d.share.toFixed(2)}</p>
+                  <p className="text-[9px] text-gray-400 dark:text-gray-500">{t('owes')} {d.share.toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -289,7 +291,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
 
       {/* Submit */}
       <button type="submit" className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white shadow-sm transition active:scale-[0.98] focus:outline-none focus:ring-4 ${isEditing ? 'bg-amber-500 hover:bg-amber-600 focus:ring-amber-200 dark:focus:ring-amber-800' : 'bg-primary-600 hover:bg-primary-700 focus:ring-primary-200 dark:focus:ring-primary-800'}`}>
-        {isEditing ? <><Save size={18} /> Save Changes</> : <><PlusCircle size={18} /> Add Expense</>}
+        {isEditing ? <><Save size={18} /> {t('saveChanges')}</> : <><PlusCircle size={18} /> {t('addExpense')}</>}
       </button>
     </motion.form>
   );
