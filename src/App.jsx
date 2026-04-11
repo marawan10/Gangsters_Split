@@ -26,21 +26,18 @@ import {
 
 const IDENTITY_KEY = 'gangsters-identity';
 
-/** 12:00–23:59 local time → evening sound; otherwise default intro */
-function getIntroSoundSrc() {
-  const hour = new Date().getHours();
-  const isEvening = hour >= 12;
-  return isEvening ? '/sound-bahgat.mp3' : '/sound.mp3';
-}
-
-function useIntroSound() {
+/** Bahgat only on Dashboard (home), 12:00–23:59 local. Identity + Expenses always original. */
+function useIntroSound({ currentUser, tab }) {
   const played = useRef(false);
+  const tabRef = useRef(tab);
+  const userRef = useRef(currentUser);
+  tabRef.current = tab;
+  userRef.current = currentUser;
 
   useEffect(() => {
     if (played.current) return;
 
     const audio = document.createElement('audio');
-    audio.src = getIntroSoundSrc();
     audio.preload = 'auto';
     audio.playsInline = true;
     audio.setAttribute('playsinline', '');
@@ -49,11 +46,24 @@ function useIntroSound() {
 
     const events = ['touchend', 'click', 'keydown'];
 
+    function pickSrc() {
+      const u = userRef.current;
+      const tb = tabRef.current;
+      const evening = new Date().getHours() >= 12;
+      if (u && tb === 'dashboard' && evening) return '/sound-bahgat.mp3';
+      return '/sound.mp3';
+    }
+
     function play() {
       if (played.current) return;
       played.current = true;
-      audio.play().catch(() => {});
       cleanup();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          audio.src = pickSrc();
+          audio.play().catch(() => {});
+        });
+      });
     }
 
     function cleanup() {
@@ -102,7 +112,7 @@ export default function App() {
   const [spendPopup, setSpendPopup] = useState(null);
   const spendPopupShown = useRef(new Set());
   const { t, isRTL, shortName } = useLanguage();
-  useIntroSound();
+  useIntroSound({ currentUser, tab });
 
   function pickIdentity(user) {
     localStorage.setItem(IDENTITY_KEY, user);
