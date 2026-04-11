@@ -26,6 +26,7 @@ const db = getDatabase(app);
 
 const expensesRef = ref(db, 'expenses');
 const archiveRef = ref(db, 'archive');
+const settlementsRef = ref(db, 'settlements');
 
 function parseSnapshot(snapshot) {
   const data = snapshot.val();
@@ -77,4 +78,35 @@ export function deleteArchivedExpense(expense) {
 
 export function clearAllExpensesFromDb() {
   return set(expensesRef, null);
+}
+
+// --- Settlements ---
+
+export function subscribeSettlements(callback) {
+  const q = query(settlementsRef, orderByChild('createdAt'));
+  return onValue(q, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) { callback([]); return; }
+    callback(
+      Object.entries(data)
+        .map(([fbKey, s]) => ({ ...s, fbKey }))
+        .sort((a, b) => b.createdAt - a.createdAt),
+    );
+  });
+}
+
+export function addSettlement(settlement) {
+  const newRef = push(settlementsRef);
+  return set(newRef, settlement);
+}
+
+export function updateSettlementStatus(fbKey, status) {
+  const updates = { status };
+  if (status === 'sent') updates.sentAt = Date.now();
+  if (status === 'settled') updates.settledAt = Date.now();
+  const sRef = ref(db, `settlements/${fbKey}`);
+  return onValue(sRef, (snap) => {
+    const current = snap.val();
+    if (current) set(sRef, { ...current, ...updates });
+  }, { onlyOnce: true });
 }

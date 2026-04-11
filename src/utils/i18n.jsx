@@ -97,6 +97,28 @@ const translations = {
 
     // Notification
     notifAdded: '{who} added {item} — {amount}',
+
+    // Dashboard
+    tabDashboard: 'Dashboard',
+    tabExpenses: 'Expenses',
+    dashGreeting: 'Hey {name}',
+    dashSubtitle: 'Your settlement overview',
+    dashStats: 'All-time Stats',
+    dashYouPaid: 'You Paid',
+    dashGroupTotal: 'Group Total',
+    dashExpenses: 'Expenses',
+    dashYouOwe: 'You owe',
+    dashOwesYou: 'Owes you',
+    dashAllClear: 'All clear',
+    dashNotSentYet: 'Not sent yet',
+    dashWaitingFor: 'Waiting for {name}',
+    dashYouSent: 'You sent it ✓',
+    dashSentBy: 'Sent by {name}',
+    dashPayInstapay: 'Pay via InstaPay',
+    dashISentIt: 'I Sent It',
+    dashTapConfirm: 'Tap to confirm',
+    dashConfirmReceived: 'Confirm Received',
+    dashWaiting: 'Waiting for them',
   },
 
   ar: {
@@ -184,6 +206,27 @@ const translations = {
     cat_others: 'تاني',
 
     notifAdded: '{who} ضاف {item} — {amount}',
+
+    tabDashboard: 'الرئيسية',
+    tabExpenses: 'المصاريف',
+    dashGreeting: 'أهلاً يا {name}',
+    dashSubtitle: 'ملخص الحسابات بينك وبين الشباب',
+    dashStats: 'إحصائيات عامة',
+    dashYouPaid: 'دفعت',
+    dashGroupTotal: 'إجمالي الكل',
+    dashExpenses: 'عمليات',
+    dashYouOwe: 'عليك',
+    dashOwesYou: 'ليك عنده',
+    dashAllClear: 'الحساب مظبوط',
+    dashNotSentYet: 'لسه متبعتش',
+    dashWaitingFor: 'مستني {name} يبعت',
+    dashYouSent: 'بعتها ✓',
+    dashSentBy: '{name} بعتها',
+    dashPayInstapay: 'ادفع InstaPay',
+    dashISentIt: 'أنا بعتها',
+    dashTapConfirm: 'اضغط للتأكيد',
+    dashConfirmReceived: 'وصلتني ✓',
+    dashWaiting: 'مستنيهم يبعتوا',
   },
 };
 

@@ -1,22 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RotateCcw, Sparkles } from 'lucide-react';
+import { RotateCcw, Sparkles, Home, Receipt } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ExpenseForm from './components/ExpenseForm';
 import ShoppingTrip from './components/ShoppingTrip';
 import ExpenseList from './components/ExpenseList';
 import Summary from './components/Summary';
 import History from './components/History';
+import Dashboard from './components/Dashboard';
 import DarkModeToggle from './components/DarkModeToggle';
 import LanguageToggle from './components/LanguageToggle';
 import { USERS } from './utils/constants';
 import { useLanguage } from './utils/i18n';
+import { computeSettlements, computeNetBalances } from './utils/calculations';
 import {
   subscribeExpenses,
   subscribeArchive,
+  subscribeSettlements,
   addExpenseToDb,
   updateExpenseInDb,
   deleteExpenseFromDb,
   archiveExpense,
+  addSettlement,
   clearAllExpensesFromDb,
 } from './utils/firebase';
 
@@ -84,9 +88,11 @@ export default function App() {
   );
   const [expenses, setExpenses] = useState([]);
   const [archive, setArchive] = useState([]);
+  const [settlements, setSettlements] = useState([]);
   const [dark, toggleDark] = useDarkMode();
   const [editingExpense, setEditingExpense] = useState(null);
   const [formMode, setFormMode] = useState('quick');
+  const [tab, setTab] = useState('dashboard');
   const { t, isRTL } = useLanguage();
   useIntroSound();
 
@@ -124,7 +130,8 @@ export default function App() {
       setExpenses(list);
     });
     const unsub2 = subscribeArchive(setArchive);
-    return () => { unsub1(); unsub2(); };
+    const unsub3 = subscribeSettlements(setSettlements);
+    return () => { unsub1(); unsub2(); unsub3(); };
   }, [currentUser]);
 
   useEffect(() => {
@@ -166,6 +173,17 @@ export default function App() {
 
   const archiveAll = useCallback(() => {
     setEditingExpense(null);
+    const balances = computeNetBalances(expenses);
+    const plan = computeSettlements(balances);
+    plan.forEach((s) => {
+      addSettlement({
+        from: s.from,
+        to: s.to,
+        amount: s.amount,
+        status: 'pending',
+        createdAt: Date.now(),
+      });
+    });
     expenses.forEach((e) => archiveExpense(e));
   }, [expenses]);
 
@@ -256,59 +274,93 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6">
-        {/* Mode toggle */}
-        {!editingExpense && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setFormMode('quick')}
-              className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-2xl border text-sm font-medium transition active:scale-[0.97] ${
-                formMode === 'quick'
-                  ? 'border-primary-400 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
-                  : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
-              }`}
-            >
-              ⚡ {t('quickAdd')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormMode('trip')}
-              className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-2xl border text-sm font-medium transition active:scale-[0.97] ${
-                formMode === 'trip'
-                  ? 'border-primary-400 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
-                  : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
-              }`}
-            >
-              🛒 {t('shoppingTrip')}
-            </button>
-          </div>
-        )}
-
-        {formMode === 'quick' || editingExpense ? (
-          <ExpenseForm
-            onAdd={addExpense}
-            onUpdate={updateExpense}
-            editingExpense={editingExpense}
-            onCancelEdit={cancelEdit}
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-3 py-4 pb-20 sm:space-y-6 sm:px-6 sm:py-6">
+        {tab === 'dashboard' ? (
+          <Dashboard
             currentUser={currentUser}
+            expenses={expenses}
+            archive={archive}
+            settlements={settlements}
           />
         ) : (
-          <ShoppingTrip onSubmitTrip={submitTrip} currentUser={currentUser} />
+          <>
+            {/* Mode toggle */}
+            {!editingExpense && (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormMode('quick')}
+                  className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-2xl border text-sm font-medium transition active:scale-[0.97] ${
+                    formMode === 'quick'
+                      ? 'border-primary-400 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
+                      : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                  }`}
+                >
+                  ⚡ {t('quickAdd')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormMode('trip')}
+                  className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-2xl border text-sm font-medium transition active:scale-[0.97] ${
+                    formMode === 'trip'
+                      ? 'border-primary-400 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
+                      : 'border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                  }`}
+                >
+                  🛒 {t('shoppingTrip')}
+                </button>
+              </div>
+            )}
+
+            {formMode === 'quick' || editingExpense ? (
+              <ExpenseForm
+                onAdd={addExpense}
+                onUpdate={updateExpense}
+                editingExpense={editingExpense}
+                onCancelEdit={cancelEdit}
+                currentUser={currentUser}
+              />
+            ) : (
+              <ShoppingTrip onSubmitTrip={submitTrip} currentUser={currentUser} />
+            )}
+            <Summary expenses={expenses} onArchiveAll={archiveAll} />
+            <ExpenseList
+              expenses={expenses}
+              onDelete={deleteExpense}
+              onEdit={startEdit}
+            />
+            <History archive={archive} />
+          </>
         )}
-        <Summary expenses={expenses} onArchiveAll={archiveAll} />
-        <ExpenseList
-          expenses={expenses}
-          onDelete={deleteExpense}
-          onEdit={startEdit}
-        />
-        <History archive={archive} />
       </main>
 
-      {/* Footer */}
-      <footer className="pb-6 pt-2 text-center text-[11px] text-gray-400 dark:text-gray-600">
-        El Maro &middot; El Kemo &middot; El Back
-      </footer>
+      {/* Bottom Navigation */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200/80 bg-white/90 backdrop-blur-xl dark:border-gray-700/80 dark:bg-gray-900/90">
+        <div className="mx-auto flex max-w-2xl">
+          <button
+            onClick={() => setTab('dashboard')}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold transition ${
+              tab === 'dashboard'
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-gray-400 dark:text-gray-500'
+            }`}
+          >
+            <Home size={20} />
+            {t('tabDashboard')}
+          </button>
+          <button
+            onClick={() => setTab('expenses')}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold transition ${
+              tab === 'expenses'
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-gray-400 dark:text-gray-500'
+            }`}
+          >
+            <Receipt size={20} />
+            {t('tabExpenses')}
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }

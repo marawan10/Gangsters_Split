@@ -8,3 +8,15 @@ export const CATEGORIES = [
   { id: 'bills', label: 'Bills', emoji: '📄' },
   { id: 'others', label: 'Others', emoji: '📦' },
 ];
+
+export const INSTAPAY = {
+  'El Maro': 'marwan_mokhtar10',
+  'El Kemo': 'kim0mo',
+  'El Back': 'mohamed4hmed',
+};
+
+export function getInstapayUrl(user) {
+  const username = INSTAPAY[user];
+  if (!username) return null;
+  return `https://ipn.eg/S/${username}/instapay`;
+}
