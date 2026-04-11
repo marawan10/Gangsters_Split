@@ -4,6 +4,7 @@ import {
   ref,
   push,
   set,
+  get,
   remove,
   onValue,
   query,
@@ -100,13 +101,13 @@ export function addSettlement(settlement) {
   return set(newRef, settlement);
 }
 
-export function updateSettlementStatus(fbKey, status) {
-  const updates = { status };
-  if (status === 'sent') updates.sentAt = Date.now();
-  if (status === 'settled') updates.settledAt = Date.now();
+export async function updateSettlementStatus(fbKey, status) {
   const sRef = ref(db, `settlements/${fbKey}`);
-  return onValue(sRef, (snap) => {
-    const current = snap.val();
-    if (current) set(sRef, { ...current, ...updates });
-  }, { onlyOnce: true });
+  const snap = await get(sRef);
+  const current = snap.val();
+  if (!current) return;
+  const next = { ...current, status };
+  if (status === 'sent') next.sentAt = Date.now();
+  if (status === 'settled') next.settledAt = Date.now();
+  return set(sRef, next);
 }
