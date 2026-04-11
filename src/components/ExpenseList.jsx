@@ -31,7 +31,7 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const breakdown = computeExpenseBreakdown(expense);
-  const { t, lang } = useLanguage();
+  const { t, shortName } = useLanguage();
 
   const payers = USERS.filter((u) => (expense.paidBy[u] || 0) > 0);
   const payerSummary = payers.map((u) => `${shortName(u)} ${expense.paidBy[u].toFixed(0)}`).join(' · ');
