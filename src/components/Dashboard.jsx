@@ -65,6 +65,9 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {t('dashSubtitle')}
         </p>
+        <p className="mt-2.5 border-t border-gray-100 pt-2.5 text-[10px] leading-relaxed text-gray-400 dark:border-gray-600 dark:text-gray-500">
+          {t('dashHint')}
+        </p>
       </div>
 
       {/* Debt cards */}
