@@ -4,8 +4,6 @@ import { PlusCircle, Trash2, ShoppingCart, Check, X, AlertCircle } from 'lucide-
 import { USERS } from '../utils/constants';
 import { useLanguage } from '../utils/i18n';
 
-const SHORT = (n) => n.replace('El ', '');
-
 function emptyItem() {
   return { id: crypto.randomUUID(), name: '', amount: '', forWhom: [...USERS] };
 }
@@ -14,7 +12,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
   const [payer, setPayer] = useState(currentUser || USERS[0]);
   const [items, setItems] = useState([emptyItem()]);
   const [errors, setErrors] = useState([]);
-  const { t } = useLanguage();
+  const { t, shortName } = useLanguage();
 
   function addItem() {
     setItems((prev) => [...prev, emptyItem()]);
@@ -128,7 +126,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
               }`}
             >
               {payer === user && <Check size={14} />}
-              {SHORT(user)}
+              {shortName(user)}
             </button>
           ))}
         </div>
@@ -190,7 +188,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
                     }`}
                   >
                     {active ? <Check size={9} /> : <X size={9} />}
-                    {SHORT(user)}
+                    {shortName(user)}
                   </button>
                 );
               })}
@@ -218,7 +216,7 @@ export default function ShoppingTrip({ onSubmitTrip, currentUser }) {
                 const net = Math.round(((isPayer ? totalAmount : 0) - owes) * 100) / 100;
                 return (
                   <div key={u} className={`flex-1 rounded-xl p-2.5 text-center ${net > 0.005 ? 'bg-emerald-50 dark:bg-emerald-900/20' : net < -0.005 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
-                    <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{SHORT(u)}</p>
+                    <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{shortName(u)}</p>
                     <p className={`text-sm font-bold ${net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                       {net > 0 ? '+' : ''}{net.toFixed(0)}
                     </p>

@@ -6,8 +6,6 @@ import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { deleteArchivedExpense } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
 
-const SHORT = (n) => n.replace('El ', '');
-
 function groupByDate(items) {
   const groups = {};
   items.forEach((item) => {
@@ -29,7 +27,7 @@ function getBalanceEmoji(bal) {
   return '😌';
 }
 
-function shareGroup(expenses, dateLabel, t) {
+function shareGroup(expenses, dateLabel, t, shortName) {
   const balances = computeNetBalances(expenses);
   const settlements = computeSettlements(balances);
   const total = expenses.reduce((s, e) => s + e.amount, 0);
@@ -39,7 +37,7 @@ function shareGroup(expenses, dateLabel, t) {
   lines.push(`*${t('waTotalPaid')}*`);
   USERS.forEach((u) => {
     const paid = expenses.reduce((s, e) => s + (e.paidBy[u] || 0), 0);
-    lines.push(`💳 ${u}: ${paid.toFixed(2)}`);
+    lines.push(`💳 ${shortName(u)}: ${paid.toFixed(2)}`);
   });
   lines.push(`📊 ${t('total')}: ${total.toFixed(2)}`);
 
@@ -47,12 +45,12 @@ function shareGroup(expenses, dateLabel, t) {
   USERS.forEach((u) => {
     const bal = balances[u];
     const sign = bal > 0 ? '+' : '';
-    lines.push(`${getBalanceEmoji(bal)} ${u}: ${sign}${bal.toFixed(2)}`);
+    lines.push(`${getBalanceEmoji(bal)} ${shortName(u)}: ${sign}${bal.toFixed(2)}`);
   });
 
   if (settlements.length > 0) {
     lines.push('', `*${t('waSettlement')}*`);
-    settlements.forEach((s) => lines.push(`➡️ ${t('waPays', { from: s.from, to: s.to, amount: s.amount.toFixed(2) })}`));
+    settlements.forEach((s) => lines.push(`➡️ ${t('waPays', { from: shortName(s.from), to: shortName(s.to), amount: s.amount.toFixed(2) })}`));
   }
 
   const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(lines.join('\n'))}`;
@@ -72,7 +70,7 @@ function formatGroupDate(dateStr, t) {
 
 export default function History({ archive }) {
   const [open, setOpen] = useState(false);
-  const { t } = useLanguage();
+  const { t, shortName } = useLanguage();
 
   if (archive.length === 0) return null;
 
@@ -116,7 +114,7 @@ export default function History({ archive }) {
               <div className="mb-3 flex gap-1.5">
                 {USERS.map((u) => (
                   <div key={u} className="flex-1 rounded-xl bg-gray-50 p-2.5 text-center dark:bg-gray-700/50">
-                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{SHORT(u)}</p>
+                    <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">{shortName(u)}</p>
                     <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{perPersonPaid[u].toFixed(0)}</p>
                   </div>
                 ))}
@@ -143,7 +141,7 @@ export default function History({ archive }) {
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          onClick={() => shareGroup(group.expenses, dateLabel, t)}
+                          onClick={() => shareGroup(group.expenses, dateLabel, t, shortName)}
                           className="flex h-6 items-center gap-1 rounded-lg bg-[#25D366] px-2 text-[10px] font-semibold text-white transition active:scale-95"
                         >
                           <MessageCircle size={10} /> {t('send')}
@@ -166,7 +164,7 @@ export default function History({ archive }) {
                               </p>
                               {expense.addedBy && (
                                 <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                                  {t('by')} {SHORT(expense.addedBy)}
+                                  {t('by')} {shortName(expense.addedBy)}
                                 </p>
                               )}
                             </div>

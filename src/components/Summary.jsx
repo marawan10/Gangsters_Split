@@ -4,10 +4,8 @@ import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { USERS } from '../utils/constants';
 import { useLanguage } from '../utils/i18n';
 
-const SHORT = (n) => n.replace('El ', '');
-
 export default function Summary({ expenses, onArchiveAll }) {
-  const { t } = useLanguage();
+  const { t, shortName } = useLanguage();
   const balances = computeNetBalances(expenses);
   const settlements = computeSettlements(balances);
 
@@ -29,7 +27,7 @@ export default function Summary({ expenses, onArchiveAll }) {
 
     lines.push(`*${t('waTotalPaid')}*`);
     USERS.forEach((user) => {
-      lines.push(`💳 ${user}: ${perPersonPaid[user].toFixed(2)}`);
+      lines.push(`💳 ${shortName(user)}: ${perPersonPaid[user].toFixed(2)}`);
     });
     lines.push(`📊 ${t('total')}: ${totalExpenses.toFixed(2)}`);
 
@@ -39,12 +37,12 @@ export default function Summary({ expenses, onArchiveAll }) {
       const bal = balances[user];
       const sign = bal > 0 ? '+' : '';
       const emoji = getBalanceEmoji(bal);
-      lines.push(`${emoji} ${user}: ${sign}${bal.toFixed(2)}`);
+      lines.push(`${emoji} ${shortName(user)}: ${sign}${bal.toFixed(2)}`);
     });
 
     if (settlements.length > 0) {
       lines.push('', `*${t('waSettlement')}*`);
-      settlements.forEach((s) => lines.push(`➡️ ${t('waPays', { from: s.from, to: s.to, amount: s.amount.toFixed(2) })}`));
+      settlements.forEach((s) => lines.push(`➡️ ${t('waPays', { from: shortName(s.from), to: shortName(s.to), amount: s.amount.toFixed(2) })}`));
     }
     return lines.join('\n');
   }
@@ -66,7 +64,7 @@ export default function Summary({ expenses, onArchiveAll }) {
         <div className="flex gap-2">
           <StatBox label={t('total')} value={totalExpenses.toFixed(0)} highlight />
           {USERS.map((u) => (
-            <StatBox key={u} label={SHORT(u)} value={perPersonPaid[u].toFixed(0)} />
+            <StatBox key={u} label={shortName(u)} value={perPersonPaid[u].toFixed(0)} />
           ))}
         </div>
       </div>
@@ -92,7 +90,7 @@ export default function Summary({ expenses, onArchiveAll }) {
             return (
               <div key={user} className={`relative overflow-hidden rounded-xl border p-2.5 text-center sm:p-4 ${positive ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20' : negative ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-700/50'}`}>
                 <span className="pointer-events-none absolute -bottom-1 -right-1 text-3xl opacity-20 sm:text-4xl">{emoji}</span>
-                <p className="text-[11px] font-medium text-gray-500 sm:text-sm dark:text-gray-400">{SHORT(user)}</p>
+                <p className="text-[11px] font-medium text-gray-500 sm:text-sm dark:text-gray-400">{shortName(user)}</p>
                 <p className={`mt-0.5 text-lg font-bold sm:mt-1 sm:text-2xl ${positive ? 'text-emerald-600 dark:text-emerald-400' : negative ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                   {bal > 0 ? '+' : ''}{bal.toFixed(0)}
                 </p>
@@ -131,9 +129,9 @@ export default function Summary({ expenses, onArchiveAll }) {
           <div className="space-y-2">
             {settlements.map((s, i) => (
               <motion.div key={`${s.from}-${s.to}`} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-center gap-3 rounded-xl bg-gray-50 px-3.5 py-3 dark:bg-gray-700/50">
-                <span className="text-sm font-bold text-red-500 dark:text-red-400">{SHORT(s.from)}</span>
+                <span className="text-sm font-bold text-red-500 dark:text-red-400">{shortName(s.from)}</span>
                 <span className="text-xs text-gray-400">→</span>
-                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{SHORT(s.to)}</span>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{shortName(s.to)}</span>
                 <span className="ms-auto text-base font-extrabold tabular-nums text-gray-900 dark:text-white">{s.amount.toFixed(0)}</span>
               </motion.div>
             ))}

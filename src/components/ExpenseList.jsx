@@ -6,10 +6,8 @@ import { USERS, CATEGORIES } from '../utils/constants';
 import { formatDateLocalized } from '../utils/date';
 import { useLanguage } from '../utils/i18n';
 
-const SHORT = (n) => n.replace('El ', '');
-
 export default function ExpenseList({ expenses, onDelete, onEdit }) {
-  const { t } = useLanguage();
+  const { t, shortName } = useLanguage();
   if (expenses.length === 0) return null;
 
   return (
@@ -36,7 +34,7 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
   const { t, lang } = useLanguage();
 
   const payers = USERS.filter((u) => (expense.paidBy[u] || 0) > 0);
-  const payerSummary = payers.map((u) => `${SHORT(u)} ${expense.paidBy[u].toFixed(0)}`).join(' · ');
+  const payerSummary = payers.map((u) => `${shortName(u)} ${expense.paidBy[u].toFixed(0)}`).join(' · ');
 
   function handleDelete() {
     if (confirmDelete) { onDelete(expense.id); }
@@ -81,7 +79,7 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
                 const isIn = expense.participants.includes(u);
                 return (
                   <span key={u} className={`inline-flex h-4 items-center rounded px-1 text-[9px] font-bold leading-none ${isIn ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300' : 'bg-gray-100 text-gray-300 dark:bg-gray-700 dark:text-gray-600'}`}>
-                    {SHORT(u).charAt(0)}
+                    {shortName(u).charAt(0)}
                   </span>
                 );
               })}
@@ -90,7 +88,7 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
               <>
                 <span className="text-gray-300 dark:text-gray-600">·</span>
                 <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                  {t('by')} {SHORT(expense.addedBy)}
+                  {t('by')} {shortName(expense.addedBy)}
                 </span>
               </>
             )}
@@ -118,7 +116,7 @@ function ExpenseCard({ expense, onDelete, onEdit }) {
                   const b = breakdown[user];
                   return (
                     <div key={user} className={`flex-1 rounded-xl p-2 text-center ${b.net > 0.005 ? 'bg-emerald-50 dark:bg-emerald-900/20' : b.net < -0.005 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
-                      <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{SHORT(user)}</p>
+                      <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{shortName(user)}</p>
                       <p className={`text-sm font-bold ${b.net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : b.net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                         {b.net > 0 ? '+' : ''}{b.net.toFixed(2)}
                       </p>

@@ -2,6 +2,12 @@ import { createContext, useContext, useState, useCallback } from 'react';
 
 const LANG_KEY = 'gangsters-lang';
 
+const AR_NAMES = {
+  'El Maro': 'مارو',
+  'El Kemo': 'كيمو',
+  'El Back': 'باك',
+};
+
 const translations = {
   en: {
     appName: 'Gangsters Split',
@@ -122,6 +128,8 @@ const translations = {
     dashTapConfirm: 'Tap to confirm',
     dashConfirmReceived: 'Confirm Received',
     dashWaiting: 'Waiting for them',
+
+    spendingPopup: '{amount} ?? خخخخخ احنا لازم نتقشف',
   },
 
   ar: {
@@ -233,6 +241,8 @@ const translations = {
     dashTapConfirm: 'اضغط للتأكيد',
     dashConfirmReceived: 'وصلتني ✓',
     dashWaiting: 'مستنيهم يبعتوا',
+
+    spendingPopup: '{amount} ?? خخخخخ احنا لازم نتقشف',
   },
 };
 
@@ -263,8 +273,16 @@ export function LangProvider({ children }) {
 
   const isRTL = lang === 'ar';
 
+  const shortName = useCallback(
+    (fullName) => {
+      if (lang === 'ar') return AR_NAMES[fullName] || fullName.replace('El ', '');
+      return fullName.replace('El ', '');
+    },
+    [lang],
+  );
+
   return (
-    <LangContext.Provider value={{ lang, setLang, t, isRTL }}>
+    <LangContext.Provider value={{ lang, setLang, t, isRTL, shortName }}>
       {children}
     </LangContext.Provider>
   );

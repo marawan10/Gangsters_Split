@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Sparkles, Home, Receipt } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ExpenseForm from './components/ExpenseForm';
 import ShoppingTrip from './components/ShoppingTrip';
 import ExpenseList from './components/ExpenseList';
@@ -25,7 +25,6 @@ import {
 } from './utils/firebase';
 
 const IDENTITY_KEY = 'gangsters-identity';
-const SHORT = (n) => n.replace('El ', '');
 
 function useIntroSound() {
   const played = useRef(false);
@@ -93,7 +92,9 @@ export default function App() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [formMode, setFormMode] = useState('quick');
   const [tab, setTab] = useState('dashboard');
-  const { t, isRTL } = useLanguage();
+  const [spendPopup, setSpendPopup] = useState(null);
+  const spendPopupShown = useRef(new Set());
+  const { t, isRTL, shortName } = useLanguage();
   useIntroSound();
 
   function pickIdentity(user) {
@@ -120,7 +121,7 @@ export default function App() {
         const newest = list[0];
         if (newest?.addedBy && newest.addedBy !== currentUser) {
           const title = t('appName');
-          const body = t('notifAdded', { who: SHORT(newest.addedBy), item: newest.item, amount: newest.amount.toFixed(0) });
+          const body = t('notifAdded', { who: shortName(newest.addedBy), item: newest.item, amount: newest.amount.toFixed(0) });
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(title, { body, icon: '/icon.png' });
           }
@@ -150,6 +151,17 @@ export default function App() {
     const id = setInterval(archiveExpired, 60_000);
     return () => clearInterval(id);
   }, [expenses]);
+
+  useEffect(() => {
+    if (!expenses.length) return;
+    const todayTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const threshold = Math.floor(todayTotal / 100) * 100;
+    if (threshold >= 400 && !spendPopupShown.current.has(threshold)) {
+      spendPopupShown.current.add(threshold);
+      setSpendPopup(t('spendingPopup', { amount: threshold.toString() }));
+      setTimeout(() => setSpendPopup(null), 4000);
+    }
+  }, [expenses, t]);
 
   const addExpense = useCallback((expense) => {
     addExpenseToDb(expense);
@@ -228,7 +240,7 @@ export default function App() {
                 onClick={() => pickIdentity(user)}
                 className="flex h-14 w-full items-center justify-center rounded-2xl border border-gray-200 bg-white text-base font-semibold text-gray-900 shadow-sm transition active:scale-[0.97] hover:border-primary-400 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:border-primary-600 dark:hover:bg-primary-900/20"
               >
-                {user}
+                {shortName(user)}
               </button>
             ))}
           </div>
@@ -256,7 +268,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
-              {SHORT(currentUser)}
+              {shortName(currentUser)}
             </span>
             {expenses.length > 0 && (
               <button
@@ -272,6 +284,21 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Spending popup */}
+      <AnimatePresence>
+        {spendPopup && (
+          <motion.div
+            initial={{ opacity: 0, y: -40, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed inset-x-0 top-16 z-50 mx-auto w-fit max-w-xs cursor-pointer rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-center text-sm font-bold text-amber-800 shadow-lg dark:border-amber-700 dark:bg-amber-900/80 dark:text-amber-200"
+            onClick={() => setSpendPopup(null)}
+          >
+            😂 {spendPopup}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main */}
       <main className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-3 py-4 pb-20 sm:space-y-6 sm:px-6 sm:py-6">

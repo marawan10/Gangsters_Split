@@ -5,7 +5,6 @@ import { USERS, CATEGORIES } from '../utils/constants';
 import { splitEvenly } from '../utils/calculations';
 import { useLanguage } from '../utils/i18n';
 
-const SHORT = (n) => n.replace('El ', '');
 const emptyPaidBy = Object.fromEntries(USERS.map((u) => [u, '']));
 
 export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelEdit, currentUser }) {
@@ -16,7 +15,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
   const [paidBy, setPaidBy] = useState({ ...emptyPaidBy });
   const [errors, setErrors] = useState([]);
   const formRef = useRef(null);
-  const { t } = useLanguage();
+  const { t, shortName } = useLanguage();
 
   const isEditing = !!editingExpense;
   const isOthers = category?.id === 'others';
@@ -224,7 +223,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
                 }`}
               >
                 {active ? <Check size={14} /> : <X size={14} />}
-                {SHORT(user)}
+                {shortName(user)}
               </button>
             );
           })}
@@ -245,7 +244,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
         <div className="space-y-2">
           {USERS.map((user) => (
             <div key={user} className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50/50 p-2 dark:border-gray-700 dark:bg-gray-700/30">
-              <span className="w-14 text-center text-xs font-semibold text-gray-600 dark:text-gray-300">{SHORT(user)}</span>
+              <span className="w-14 text-center text-xs font-semibold text-gray-600 dark:text-gray-300">{shortName(user)}</span>
               <input type="number" min="0" step="0.01" inputMode="decimal" value={paidBy[user]} onChange={(e) => handlePaidChange(user, e.target.value)} placeholder="0" className={inputCls} />
             </div>
           ))}
@@ -256,7 +255,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
           {nonParticipantPayers.length > 0 && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-2.5 flex items-start gap-2 overflow-hidden rounded-xl bg-amber-50 p-2.5 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
               <Info size={13} className="mt-0.5 shrink-0" />
-              <span>{nonParticipantPayers.map((e) => SHORT(e.user)).join(', ')} {nonParticipantPayers.length === 1 ? t('loanWarning_one') : t('loanWarning_many')}</span>
+              <span>{nonParticipantPayers.map((e) => shortName(e.user)).join(', ')} {nonParticipantPayers.length === 1 ? t('loanWarning_one') : t('loanWarning_many')}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -277,7 +276,7 @@ export default function ExpenseForm({ onAdd, onUpdate, editingExpense, onCancelE
             <div className="flex gap-1.5">
               {previewData.map((d) => (
                 <div key={d.user} className={`flex-1 rounded-xl p-2.5 text-center ${d.net > 0.005 ? 'bg-emerald-50 dark:bg-emerald-900/20' : d.net < -0.005 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
-                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{SHORT(d.user)}</p>
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{shortName(d.user)}</p>
                   <p className={`text-sm font-bold ${d.net > 0.005 ? 'text-emerald-600 dark:text-emerald-400' : d.net < -0.005 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}`}>
                     {d.net > 0 ? '+' : ''}{d.net.toFixed(2)}
                   </p>

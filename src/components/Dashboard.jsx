@@ -6,10 +6,8 @@ import { updateSettlementStatus } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
 import { useState } from 'react';
 
-const SHORT = (n) => n.replace('El ', '');
-
 export default function Dashboard({ currentUser, expenses, archive, settlements }) {
-  const { t } = useLanguage();
+  const { t, shortName } = useLanguage();
 
   const allExpenses = [...expenses, ...archive];
   const balances = computeNetBalances(allExpenses);
@@ -62,7 +60,7 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
       {/* Greeting */}
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-          👋 {t('dashGreeting', { name: SHORT(currentUser) })}
+          👋 {t('dashGreeting', { name: shortName(currentUser) })}
         </h2>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {t('dashSubtitle')}
@@ -76,6 +74,7 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
           currentUser={currentUser}
           debt={d}
           t={t}
+          shortName={shortName}
         />
       ))}
 
@@ -103,7 +102,7 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
   );
 }
 
-function DebtCard({ currentUser, debt, t }) {
+function DebtCard({ currentUser, debt, t, shortName }) {
   const { other, iOwe, theyOwe, pendingSettlement } = debt;
   const [confirmSent, setConfirmSent] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -124,7 +123,7 @@ function DebtCard({ currentUser, debt, t }) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">{SHORT(other)}</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">{shortName(other)}</span>
           <span className="text-xs font-medium text-gray-400">✅ {t('dashAllClear')}</span>
         </div>
       </div>
@@ -161,7 +160,7 @@ function DebtCard({ currentUser, debt, t }) {
       <div className="p-4">
         {/* Header */}
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-bold text-gray-900 dark:text-white">{SHORT(other)}</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-white">{shortName(other)}</span>
           {iOwe > 0.005 ? (
             <span className="rounded-lg bg-red-100 px-2.5 py-1 text-xs font-bold text-red-600 dark:bg-red-900/30 dark:text-red-400">
               {t('dashYouOwe')} {iOwe.toFixed(0)}
@@ -181,10 +180,10 @@ function DebtCard({ currentUser, debt, t }) {
               : 'bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400'
           }`}>
             {status === 'pending' && (
-              <><Clock size={13} /> {iAmDebtor ? t('dashNotSentYet') : t('dashWaitingFor', { name: SHORT(pendingSettlement.from) })}</>
+              <><Clock size={13} /> {iAmDebtor ? t('dashNotSentYet') : t('dashWaitingFor', { name: shortName(pendingSettlement.from) })}</>
             )}
             {status === 'sent' && (
-              <><Send size={13} /> {iAmDebtor ? t('dashYouSent') : t('dashSentBy', { name: SHORT(pendingSettlement.from) })}</>
+              <><Send size={13} /> {iAmDebtor ? t('dashYouSent') : t('dashSentBy', { name: shortName(pendingSettlement.from) })}</>
             )}
           </div>
         )}
