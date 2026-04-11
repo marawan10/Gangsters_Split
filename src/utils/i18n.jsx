@@ -128,6 +128,7 @@ const translations = {
     dashTapConfirm: 'Tap to confirm',
     dashConfirmReceived: 'Confirm Received',
     dashWaiting: 'Waiting for them',
+    dashWaitingConfirm: 'Waiting for {name} to confirm',
 
     spendingPopup: '{amount} ?? خخخخخ احنا لازم نتقشف',
   },
@@ -241,6 +242,7 @@ const translations = {
     dashTapConfirm: 'اضغط للتأكيد',
     dashConfirmReceived: 'وصلتني ✓',
     dashWaiting: 'مستنيهم يبعتوا',
+    dashWaitingConfirm: 'مستني {name} يأكد الاستلام',
 
     spendingPopup: '{amount} ?? خخخخخ احنا لازم نتقشف',
   },

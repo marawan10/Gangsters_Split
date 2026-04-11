@@ -198,8 +198,8 @@ function DebtCard({ currentUser, debt, t, shortName }) {
           </div>
         )}
 
-        {/* IPA address for copy (only when no direct link) */}
-        {iOwe > 0.005 && !hasDirectLink && (
+        {/* IPA address for copy (only when no direct link and not yet sent) */}
+        {iOwe > 0.005 && !hasDirectLink && status !== 'sent' && (
           <div className="mb-3 flex items-center justify-between rounded-xl bg-gray-100 px-3 py-2 dark:bg-gray-700/50">
             <span className="text-xs font-mono font-medium text-gray-600 dark:text-gray-300">{pay.username}@instapay</span>
             <button
@@ -217,7 +217,8 @@ function DebtCard({ currentUser, debt, t, shortName }) {
 
         {/* Action buttons */}
         <div className="flex gap-2">
-          {iOwe > 0.005 && (
+          {/* Pay button — hide after marking sent */}
+          {iOwe > 0.005 && status !== 'sent' && (
             <a
               href={hasDirectLink ? pay.url : `https://play.google.com/store/apps/details?id=com.egyptianbanks.instapay`}
               target="_blank"
@@ -228,7 +229,8 @@ function DebtCard({ currentUser, debt, t, shortName }) {
             </a>
           )}
 
-          {iOwe > 0.005 && (!pendingSettlement || (iAmDebtor && status === 'pending')) && (
+          {/* "I Sent It" — show when owing and not yet marked sent */}
+          {iOwe > 0.005 && status !== 'sent' && (
             <button
               onClick={handleMarkSent}
               className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-xs font-semibold transition active:scale-95 ${
@@ -241,6 +243,14 @@ function DebtCard({ currentUser, debt, t, shortName }) {
             </button>
           )}
 
+          {/* After you sent — waiting for other side */}
+          {iAmDebtor && status === 'sent' && (
+            <div className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-amber-50 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+              <Clock size={13} /> {t('dashWaitingConfirm', { name: shortName(other) })}
+            </div>
+          )}
+
+          {/* Other side confirms receipt */}
           {pendingSettlement && !iAmDebtor && status === 'sent' && (
             <button
               onClick={handleConfirmReceived}
@@ -250,6 +260,7 @@ function DebtCard({ currentUser, debt, t, shortName }) {
             </button>
           )}
 
+          {/* They owe you — waiting for them */}
           {theyOwe > 0.005 && !pendingSettlement && (
             <div className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-gray-100 text-xs font-medium text-gray-400 dark:bg-gray-700/50 dark:text-gray-500">
               <Clock size={13} /> {t('dashWaiting')}
