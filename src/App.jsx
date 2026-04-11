@@ -26,6 +26,13 @@ import {
 
 const IDENTITY_KEY = 'gangsters-identity';
 
+/** 12:00–23:59 local time → evening sound; otherwise default intro */
+function getIntroSoundSrc() {
+  const hour = new Date().getHours();
+  const isEvening = hour >= 12;
+  return isEvening ? '/sound-bahgat.mp3' : '/sound.mp3';
+}
+
 function useIntroSound() {
   const played = useRef(false);
 
@@ -33,7 +40,7 @@ function useIntroSound() {
     if (played.current) return;
 
     const audio = document.createElement('audio');
-    audio.src = '/sound.mp3';
+    audio.src = getIntroSoundSrc();
     audio.preload = 'auto';
     audio.playsInline = true;
     audio.setAttribute('playsinline', '');
