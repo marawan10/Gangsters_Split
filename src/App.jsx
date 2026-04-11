@@ -26,7 +26,7 @@ import {
 
 const IDENTITY_KEY = 'gangsters-identity';
 
-/** Bahgat only on Dashboard (home), 12:00–23:59 local. Identity + Expenses always original. */
+/** Bahgat only on Dashboard (home), any time of day. Identity + Expenses always original. Plays once per visit. */
 function useIntroSound({ currentUser, tab }) {
   const played = useRef(false);
   const tabRef = useRef(tab);
@@ -49,8 +49,7 @@ function useIntroSound({ currentUser, tab }) {
     function pickSrc() {
       const u = userRef.current;
       const tb = tabRef.current;
-      const evening = new Date().getHours() >= 12;
-      if (u && tb === 'dashboard' && evening) return '/sound-bahgat.mp3';
+      if (u && tb === 'dashboard') return '/sound-bahgat.mp3';
       return '/sound.mp3';
     }
 
