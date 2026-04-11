@@ -10,13 +10,8 @@ export const CATEGORIES = [
 ];
 
 export const INSTAPAY = {
-  'El Maro': 'marwan_mokhtar10',
-  'El Kemo': 'kim0mo',
-  'El Back': 'mohamed4hmed',
+  'El Maro': { username: 'marwan_mokhtar10', url: 'https://ipn.eg/S/marwan_mokhtar10/instapay/0D3OyF' },
+  'El Kemo': { username: 'kim0mo', url: null },
+  'El Back': { username: 'mohamed4hmed', url: null },
 };
 
-export function getInstapayUrl(user) {
-  const username = INSTAPAY[user];
-  if (!username) return null;
-  return `https://ipn.eg/S/${username}/instapay`;
-}

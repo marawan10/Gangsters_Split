@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { ExternalLink, CheckCircle, Clock, Send } from 'lucide-react';
-import { USERS, getInstapayUrl } from '../utils/constants';
+import { Copy, CheckCircle, Clock, Send } from 'lucide-react';
+import { USERS, INSTAPAY } from '../utils/constants';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { updateSettlementStatus } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
@@ -106,6 +106,18 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
 function DebtCard({ currentUser, debt, t }) {
   const { other, iOwe, theyOwe, pendingSettlement } = debt;
   const [confirmSent, setConfirmSent] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const pay = INSTAPAY[other] || {};
+  const hasDirectLink = !!pay.url;
+
+  function handleCopyIpa() {
+    if (!pay.username) return;
+    navigator.clipboard.writeText(`${pay.username}@instapay`).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   const hasDebt = iOwe > 0.005 || theyOwe > 0.005;
   if (!hasDebt && !pendingSettlement) {
@@ -177,16 +189,33 @@ function DebtCard({ currentUser, debt, t }) {
           </div>
         )}
 
+        {/* IPA address for copy (only when no direct link) */}
+        {iOwe > 0.005 && !hasDirectLink && (
+          <div className="mb-3 flex items-center justify-between rounded-xl bg-gray-100 px-3 py-2 dark:bg-gray-700/50">
+            <span className="text-xs font-mono font-medium text-gray-600 dark:text-gray-300">{pay.username}@instapay</span>
+            <button
+              onClick={handleCopyIpa}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold transition active:scale-95 ${
+                copied
+                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'bg-white text-gray-500 shadow-sm dark:bg-gray-600 dark:text-gray-300'
+              }`}
+            >
+              {copied ? <><CheckCircle size={10} /> {t('dashCopied')}</> : <><Copy size={10} /> {t('dashCopy')}</>}
+            </button>
+          </div>
+        )}
+
         {/* Action buttons */}
         <div className="flex gap-2">
           {iOwe > 0.005 && (
             <a
-              href={getInstapayUrl(other)}
+              href={hasDirectLink ? pay.url : `https://play.google.com/store/apps/details?id=com.egyptianbanks.instapay`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-primary-600 text-xs font-semibold text-white shadow-sm transition active:scale-95 hover:bg-primary-700"
             >
-              <ExternalLink size={14} /> {t('dashPayInstapay')}
+              💳 {hasDirectLink ? t('dashPayInstapay') : t('dashOpenInstapay')}
             </a>
           )}
 
