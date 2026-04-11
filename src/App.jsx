@@ -11,7 +11,11 @@ import DarkModeToggle from './components/DarkModeToggle';
 import LanguageToggle from './components/LanguageToggle';
 import { USERS } from './utils/constants';
 import { useLanguage } from './utils/i18n';
-import { computeSettlements, computeNetBalances } from './utils/calculations';
+import {
+  computeSettlements,
+  computeNetBalances,
+  getDashboardBalanceSoundKind,
+} from './utils/calculations';
 import {
   subscribeExpenses,
   subscribeArchive,
@@ -30,13 +34,9 @@ const SOUND_ORIGINAL = '/sound.mp3';
 const SOUND_RICH = '/sound-bahgat.mp3';
 const SOUND_OWES = '/3adel-shakal.mp3';
 
-/** Net balance: positive = others owe you (rich) → Bahgat; negative = you owe → 3adel. */
-function pickDashboardBalanceSound(expenses, archive, user) {
-  const all = [...expenses, ...archive];
-  if (all.length === 0) return null;
-  const bal = computeNetBalances(all)[user] || 0;
-  if (bal > 0.005) return SOUND_RICH;
-  if (bal < -0.005) return SOUND_OWES;
+function soundKindToSrc(kind) {
+  if (kind === 'rich') return SOUND_RICH;
+  if (kind === 'owes') return SOUND_OWES;
   return null;
 }
 
@@ -44,7 +44,7 @@ function pickDashboardBalanceSound(expenses, archive, user) {
  * Dashboard: autoplay balance sound once (rich = Bahgat, owes = 3adel). May be blocked until user gesture on some browsers.
  * Identity: silent (avoids double sound with dashboard). Expenses: classic intro once on first gesture.
  */
-function useBalanceAndIntroSounds({ currentUser, tab, expenses, archive }) {
+function useBalanceAndIntroSounds({ currentUser, tab, expenses, archive, settlements }) {
   const balanceSoundDone = useRef(false);
   const balancePlayInFlight = useRef(false);
   const classicIntroDone = useRef(false);
@@ -54,10 +54,18 @@ function useBalanceAndIntroSounds({ currentUser, tab, expenses, archive }) {
   const userRef = useRef(currentUser);
   const expensesRef = useRef(expenses);
   const archiveRef = useRef(archive);
+  const settlementsRef = useRef(settlements);
   tabRef.current = tab;
   userRef.current = currentUser;
   expensesRef.current = expenses;
   archiveRef.current = archive;
+  settlementsRef.current = settlements;
+
+  useEffect(() => {
+    dashboardAutoplayStarted.current = false;
+    balanceSoundDone.current = false;
+    balancePlayInFlight.current = false;
+  }, [currentUser, tab]);
 
   useEffect(() => {
     if (!currentUser || tab !== 'dashboard') return;
@@ -66,33 +74,45 @@ function useBalanceAndIntroSounds({ currentUser, tab, expenses, archive }) {
     const all = [...expenses, ...archive];
     if (all.length === 0) return;
 
-    const src = pickDashboardBalanceSound(expenses, archive, currentUser);
-    dashboardAutoplayStarted.current = true;
+    const id = window.setTimeout(() => {
+      if (dashboardAutoplayStarted.current) return;
+      dashboardAutoplayStarted.current = true;
 
-    if (!src) {
-      balanceSoundDone.current = true;
-      return;
-    }
+      const kind = getDashboardBalanceSoundKind(
+        expenses,
+        archive,
+        settlements,
+        currentUser,
+      );
+      const src = soundKindToSrc(kind);
 
-    balancePlayInFlight.current = true;
-    const audio = document.createElement('audio');
-    audio.src = src;
-    audio.preload = 'auto';
-    audio.playsInline = true;
-    audio.setAttribute('playsinline', '');
-    audio.style.display = 'none';
-    document.body.appendChild(audio);
-
-    audio
-      .play()
-      .then(() => {
+      if (!src) {
         balanceSoundDone.current = true;
-        balancePlayInFlight.current = false;
-      })
-      .catch(() => {
-        balancePlayInFlight.current = false;
-      });
-  }, [currentUser, tab, expenses, archive]);
+        return;
+      }
+
+      balancePlayInFlight.current = true;
+      const audio = document.createElement('audio');
+      audio.src = src;
+      audio.preload = 'auto';
+      audio.playsInline = true;
+      audio.setAttribute('playsinline', '');
+      audio.style.display = 'none';
+      document.body.appendChild(audio);
+
+      audio
+        .play()
+        .then(() => {
+          balanceSoundDone.current = true;
+          balancePlayInFlight.current = false;
+        })
+        .catch(() => {
+          balancePlayInFlight.current = false;
+        });
+    }, 700);
+
+    return () => window.clearTimeout(id);
+  }, [currentUser, tab, expenses, archive, settlements]);
 
   useEffect(() => {
     const audio = document.createElement('audio');
@@ -138,11 +158,13 @@ function useBalanceAndIntroSounds({ currentUser, tab, expenses, archive }) {
               detachAll();
               return;
             }
-            const src = pickDashboardBalanceSound(
+            const kind = getDashboardBalanceSoundKind(
               expensesRef.current,
               archiveRef.current,
+              settlementsRef.current,
               u,
             );
+            const src = soundKindToSrc(kind);
             balanceSoundDone.current = true;
             if (src) {
               audio.src = src;
@@ -197,7 +219,13 @@ export default function App() {
   const [spendPopup, setSpendPopup] = useState(null);
   const spendPopupShown = useRef(new Set());
   const { t, isRTL, shortName } = useLanguage();
-  useBalanceAndIntroSounds({ currentUser, tab, expenses, archive });
+  useBalanceAndIntroSounds({
+    currentUser,
+    tab,
+    expenses,
+    archive,
+    settlements,
+  });
 
   function pickIdentity(user) {
     localStorage.setItem(IDENTITY_KEY, user);

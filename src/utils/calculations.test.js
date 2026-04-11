@@ -4,6 +4,7 @@ import {
   computeExpenseBreakdown,
   computeNetBalances,
   computeSettlements,
+  getDashboardBalanceSoundKind,
 } from './calculations';
 
 const M = 'El Maro';
@@ -317,5 +318,29 @@ describe('zero-sum invariant', () => {
       const sum = Object.values(bal).reduce((a, b) => a + b, 0);
       expect(Math.abs(sum)).toBeLessThan(0.02);
     });
+  });
+});
+
+describe('getDashboardBalanceSoundKind', () => {
+  it('returns null with no expenses', () => {
+    expect(getDashboardBalanceSoundKind([], [], [], M)).toBeNull();
+  });
+
+  it('returns owes when user net owes from expenses', () => {
+    const ex = [{ amount: 300, participants: [M, K, B], paidBy: { [B]: 300 } }];
+    expect(getDashboardBalanceSoundKind(ex, [], [], M)).toBe('owes');
+    expect(getDashboardBalanceSoundKind(ex, [], [], B)).toBe('rich');
+  });
+
+  it('returns null when settled transfers match plan (all clear)', () => {
+    const ex = [{ amount: 300, participants: [M, K, B], paidBy: { [B]: 300 } }];
+    const plan = computeSettlements(computeNetBalances(ex));
+    const settled = plan.map((s) => ({
+      ...s,
+      status: 'settled',
+      fbKey: 'x',
+    }));
+    expect(getDashboardBalanceSoundKind(ex, [], settled, M)).toBeNull();
+    expect(getDashboardBalanceSoundKind(ex, [], settled, B)).toBeNull();
   });
 });

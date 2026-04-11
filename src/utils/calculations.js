@@ -124,3 +124,63 @@ export function computeSettlements(balances) {
 
   return settlements;
 }
+
+/**
+ * Dashboard-aligned sound hint: uses expense net + recorded settlements (like Dashboard cards).
+ * 'owes' = you still owe someone; 'rich' = someone still owes you; null = all clear (no debt, no pending flow).
+ */
+export function getDashboardBalanceSoundKind(expenses, archive, settlements, user) {
+  const all = [...expenses, ...archive];
+  if (all.length === 0) return null;
+
+  const balances = computeNetBalances(all);
+  const rawSettlementPlan = computeSettlements(balances);
+
+  const settledAmounts = {};
+  USERS.forEach((a) => USERS.forEach((b) => {
+    if (a !== b) settledAmounts[`${a}→${b}`] = 0;
+  }));
+  (settlements || []).filter((s) => s.status === 'settled').forEach((s) => {
+    settledAmounts[`${s.from}→${s.to}`] = (settledAmounts[`${s.from}→${s.to}`] || 0) + s.amount;
+  });
+
+  const others = USERS.filter((u) => u !== user);
+  let anyIOwe = false;
+  let anyTheyOwe = false;
+
+  for (const other of others) {
+    const rawFromMe = rawSettlementPlan
+      .filter((s) => s.from === user && s.to === other)
+      .reduce((sum, s) => sum + s.amount, 0);
+    const rawToMe = rawSettlementPlan
+      .filter((s) => s.from === other && s.to === user)
+      .reduce((sum, s) => sum + s.amount, 0);
+
+    const paidByMe = settledAmounts[`${user}→${other}`] || 0;
+    const paidToMe = settledAmounts[`${other}→${user}`] || 0;
+
+    const iOwe = Math.max(0, Math.round((rawFromMe - paidByMe) * 100) / 100);
+    const theyOwe = Math.max(0, Math.round((rawToMe - paidToMe) * 100) / 100);
+
+    const pendingSettlement = (settlements || []).find(
+      (s) => s.status !== 'settled' &&
+        ((s.from === user && s.to === other) ||
+          (s.from === other && s.to === user)),
+    );
+
+    const hasDebt = iOwe > 0.005 || theyOwe > 0.005;
+    const allClear = !hasDebt && !pendingSettlement;
+    if (allClear) continue;
+
+    if (iOwe > 0.005) anyIOwe = true;
+    if (theyOwe > 0.005) anyTheyOwe = true;
+    if (pendingSettlement && !hasDebt) {
+      if (pendingSettlement.from === user) anyIOwe = true;
+      else anyTheyOwe = true;
+    }
+  }
+
+  if (!anyIOwe && !anyTheyOwe) return null;
+  if (anyIOwe) return 'owes';
+  return 'rich';
+}
