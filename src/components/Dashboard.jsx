@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Copy, CheckCircle, Clock, Send } from 'lucide-react';
 import { USERS, INSTAPAY } from '../utils/constants';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
-import { updateSettlementStatus } from '../utils/firebase';
+import { updateSettlementStatus, addSettlement } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
 import { useState } from 'react';
 
@@ -133,10 +133,20 @@ function DebtCard({ currentUser, debt, t, shortName }) {
   const status = pendingSettlement?.status;
   const iAmDebtor = pendingSettlement?.from === currentUser;
 
-  function handleMarkSent() {
-    if (!pendingSettlement) return;
+  async function handleMarkSent() {
     if (confirmSent) {
-      updateSettlementStatus(pendingSettlement.fbKey, 'sent');
+      if (pendingSettlement) {
+        updateSettlementStatus(pendingSettlement.fbKey, 'sent');
+      } else if (iOwe > 0.005) {
+        await addSettlement({
+          from: currentUser,
+          to: other,
+          amount: iOwe,
+          status: 'sent',
+          createdAt: Date.now(),
+          sentAt: Date.now(),
+        });
+      }
       setConfirmSent(false);
     } else {
       setConfirmSent(true);
@@ -218,7 +228,7 @@ function DebtCard({ currentUser, debt, t, shortName }) {
             </a>
           )}
 
-          {pendingSettlement && iAmDebtor && status === 'pending' && (
+          {iOwe > 0.005 && (!pendingSettlement || (iAmDebtor && status === 'pending')) && (
             <button
               onClick={handleMarkSent}
               className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-xs font-semibold transition active:scale-95 ${
