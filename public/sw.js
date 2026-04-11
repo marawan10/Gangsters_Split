@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gangsters-v3';
+const CACHE_NAME = 'gangsters-v4';
 
 const PRECACHE_URLS = [
   '/',
@@ -7,6 +7,7 @@ const PRECACHE_URLS = [
   '/icon.png',
   '/sound.mp3',
   '/sound-bahgat.mp3',
+  '/3adel-shakal.mp3',
 ];
 
 self.addEventListener('install', (event) => {

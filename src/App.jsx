@@ -26,17 +26,75 @@ import {
 
 const IDENTITY_KEY = 'gangsters-identity';
 
-/** Bahgat only on Dashboard (home), any time of day. Identity + Expenses always original. Plays once per visit. */
-function useIntroSound({ currentUser, tab }) {
-  const played = useRef(false);
+const SOUND_ORIGINAL = '/sound.mp3';
+const SOUND_RICH = '/sound-bahgat.mp3';
+const SOUND_OWES = '/3adel-shakal.mp3';
+
+/** Net balance: positive = others owe you (rich) → Bahgat; negative = you owe → 3adel. */
+function pickDashboardBalanceSound(expenses, archive, user) {
+  const all = [...expenses, ...archive];
+  if (all.length === 0) return null;
+  const bal = computeNetBalances(all)[user] || 0;
+  if (bal > 0.005) return SOUND_RICH;
+  if (bal < -0.005) return SOUND_OWES;
+  return null;
+}
+
+/**
+ * Dashboard: autoplay balance sound once (rich = Bahgat, owes = 3adel). May be blocked until user gesture on some browsers.
+ * Identity: silent (avoids double sound with dashboard). Expenses: classic intro once on first gesture.
+ */
+function useBalanceAndIntroSounds({ currentUser, tab, expenses, archive }) {
+  const balanceSoundDone = useRef(false);
+  const balancePlayInFlight = useRef(false);
+  const classicIntroDone = useRef(false);
+  const dashboardAutoplayStarted = useRef(false);
+
   const tabRef = useRef(tab);
   const userRef = useRef(currentUser);
+  const expensesRef = useRef(expenses);
+  const archiveRef = useRef(archive);
   tabRef.current = tab;
   userRef.current = currentUser;
+  expensesRef.current = expenses;
+  archiveRef.current = archive;
 
   useEffect(() => {
-    if (played.current) return;
+    if (!currentUser || tab !== 'dashboard') return;
+    if (dashboardAutoplayStarted.current) return;
 
+    const all = [...expenses, ...archive];
+    if (all.length === 0) return;
+
+    const src = pickDashboardBalanceSound(expenses, archive, currentUser);
+    dashboardAutoplayStarted.current = true;
+
+    if (!src) {
+      balanceSoundDone.current = true;
+      return;
+    }
+
+    balancePlayInFlight.current = true;
+    const audio = document.createElement('audio');
+    audio.src = src;
+    audio.preload = 'auto';
+    audio.playsInline = true;
+    audio.setAttribute('playsinline', '');
+    audio.style.display = 'none';
+    document.body.appendChild(audio);
+
+    audio
+      .play()
+      .then(() => {
+        balanceSoundDone.current = true;
+        balancePlayInFlight.current = false;
+      })
+      .catch(() => {
+        balancePlayInFlight.current = false;
+      });
+  }, [currentUser, tab, expenses, archive]);
+
+  useEffect(() => {
     const audio = document.createElement('audio');
     audio.preload = 'auto';
     audio.playsInline = true;
@@ -45,38 +103,66 @@ function useIntroSound({ currentUser, tab }) {
     document.body.appendChild(audio);
 
     const events = ['touchend', 'click', 'keydown'];
+    let detached = false;
 
-    function pickSrc() {
-      const u = userRef.current;
-      const tb = tabRef.current;
-      if (u && tb === 'dashboard') return '/sound-bahgat.mp3';
-      return '/sound.mp3';
+    function detachAll() {
+      if (detached) return;
+      detached = true;
+      events.forEach((evt) =>
+        window.removeEventListener(evt, onGesture, true),
+      );
     }
 
-    function play() {
-      if (played.current) return;
-      played.current = true;
-      cleanup();
+    function onGesture() {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          audio.src = pickSrc();
-          audio.play().catch(() => {});
+          const u = userRef.current;
+          const tb = tabRef.current;
+
+          if (!u) return;
+
+          if (tb === 'expenses') {
+            if (classicIntroDone.current) {
+              detachAll();
+              return;
+            }
+            classicIntroDone.current = true;
+            audio.src = SOUND_ORIGINAL;
+            audio.play().catch(() => {});
+            detachAll();
+            return;
+          }
+
+          if (tb === 'dashboard') {
+            if (balanceSoundDone.current || balancePlayInFlight.current) {
+              detachAll();
+              return;
+            }
+            const src = pickDashboardBalanceSound(
+              expensesRef.current,
+              archiveRef.current,
+              u,
+            );
+            balanceSoundDone.current = true;
+            if (src) {
+              audio.src = src;
+              audio.play().catch(() => {});
+            }
+            detachAll();
+            return;
+          }
+
+          detachAll();
         });
       });
     }
 
-    function cleanup() {
-      events.forEach((evt) =>
-        window.removeEventListener(evt, play, true),
-      );
-    }
-
     events.forEach((evt) =>
-      window.addEventListener(evt, play, { once: true, capture: true }),
+      window.addEventListener(evt, onGesture, { capture: true }),
     );
 
     return () => {
-      cleanup();
+      detachAll();
       audio.remove();
     };
   }, []);
@@ -111,7 +197,7 @@ export default function App() {
   const [spendPopup, setSpendPopup] = useState(null);
   const spendPopupShown = useRef(new Set());
   const { t, isRTL, shortName } = useLanguage();
-  useIntroSound({ currentUser, tab });
+  useBalanceAndIntroSounds({ currentUser, tab, expenses, archive });
 
   function pickIdentity(user) {
     localStorage.setItem(IDENTITY_KEY, user);
