@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Copy, CheckCircle, Clock, Send } from 'lucide-react';
-import { USERS, INSTAPAY } from '../utils/constants';
+import { USERS, INSTAPAY, buildInstapayPayUrl } from '../utils/constants';
 import { computeNetBalances, computeSettlements } from '../utils/calculations';
 import { updateSettlementStatus, addSettlement } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
@@ -109,6 +109,7 @@ function DebtCard({ currentUser, debt, t, shortName }) {
   const { other, iOwe, theyOwe, pendingSettlement } = debt;
   const [confirmSent, setConfirmSent] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [payAmountFlash, setPayAmountFlash] = useState(false);
 
   const pay = INSTAPAY[other] || {};
   const hasDirectLink = !!pay.url;
@@ -219,13 +220,25 @@ function DebtCard({ currentUser, debt, t, shortName }) {
         )}
 
         {/* Action buttons */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
           {/* Pay button — hide after marking sent */}
           {iOwe > 0.005 && status !== 'sent' && (
             <a
-              href={hasDirectLink ? pay.url : `https://play.google.com/store/apps/details?id=com.egyptianbanks.instapay`}
+              href={
+                hasDirectLink
+                  ? buildInstapayPayUrl(pay.url, iOwe)
+                  : 'https://play.google.com/store/apps/details?id=com.egyptianbanks.instapay'
+              }
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                if (hasDirectLink && iOwe > 0.005) {
+                  void navigator.clipboard.writeText(iOwe.toFixed(2));
+                  setPayAmountFlash(true);
+                  window.setTimeout(() => setPayAmountFlash(false), 3500);
+                }
+              }}
               className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-primary-600 text-xs font-semibold text-white shadow-sm transition active:scale-95 hover:bg-primary-700"
             >
               💳 {hasDirectLink ? t('dashPayInstapay') : t('dashOpenInstapay')}
@@ -268,6 +281,12 @@ function DebtCard({ currentUser, debt, t, shortName }) {
             <div className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-gray-100 text-xs font-medium text-gray-400 dark:bg-gray-700/50 dark:text-gray-500">
               <Clock size={13} /> {t('dashWaiting')}
             </div>
+          )}
+          </div>
+          {payAmountFlash && (
+            <p className="text-center text-[10px] font-medium text-primary-600 dark:text-primary-400">
+              {t('dashPayAmountCopied')}
+            </p>
           )}
         </div>
       </div>

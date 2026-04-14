@@ -123,6 +123,8 @@ const translations = {
     dashCopy: 'Copy',
     dashCopied: 'Copied!',
     dashPayInstapay: 'Pay via InstaPay',
+    dashPayAmountCopied:
+      'Amount copied — paste it in InstaPay if the app does not fill it automatically.',
     dashOpenInstapay: 'Open InstaPay',
     dashISentIt: 'I Sent It',
     dashTapConfirm: 'Tap to confirm',
@@ -239,6 +241,7 @@ const translations = {
     dashCopy: 'نسخ',
     dashCopied: 'تم النسخ!',
     dashPayInstapay: 'ادفع InstaPay',
+    dashPayAmountCopied: 'نسخنا المبلغ — الصقه في InstaPay لو التطبيق ما حطّوش تلقائي.',
     dashOpenInstapay: 'افتح InstaPay',
     dashISentIt: 'أنا بعتها',
     dashTapConfirm: 'اضغط للتأكيد',
