@@ -5,6 +5,7 @@ import {
   applySettledToBalances,
   computeNetBalances,
   computeSettlements,
+  round2,
 } from '../utils/calculations';
 import { updateSettlementStatus, addSettlement } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
@@ -34,13 +35,33 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
     const iOwe = Math.max(0, Math.round(rawFromMe * 100) / 100);
     const theyOwe = Math.max(0, Math.round(rawToMe * 100) / 100);
 
-    const pendingSettlement = settlementList.find(
+    const pendingOutbound = settlementList.filter(
       (s) => s.status !== 'settled' &&
-        ((s.from === currentUser && s.to === other) ||
-         (s.from === other && s.to === currentUser)),
+        s.from === currentUser &&
+        s.to === other,
     );
+    const pendingInbound = settlementList.filter(
+      (s) => s.status !== 'settled' &&
+        s.from === other &&
+        s.to === currentUser,
+    );
+    const sentOutboundTotal = round2(
+      pendingOutbound
+        .filter((s) => s.status === 'sent')
+        .reduce((sum, s) => sum + s.amount, 0),
+    );
+    /** Owed on top of what you already marked "sent" (waiting for their confirm). */
+    const additionalIOwe = Math.max(0, round2(iOwe - sentOutboundTotal));
 
-    return { other, iOwe, theyOwe, pendingSettlement };
+    return {
+      other,
+      iOwe,
+      theyOwe,
+      pendingOutbound,
+      pendingInbound,
+      sentOutboundTotal,
+      additionalIOwe,
+    };
   });
 
   const totalPaid = allExpenses.reduce(
@@ -103,13 +124,27 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
 }
 
 function DebtCard({ currentUser, debt, t, shortName }) {
-  const { other, iOwe, theyOwe, pendingSettlement } = debt;
+  const {
+    other,
+    iOwe,
+    theyOwe,
+    pendingOutbound,
+    pendingInbound,
+    sentOutboundTotal,
+    additionalIOwe,
+  } = debt;
   const [confirmSent, setConfirmSent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [payAmountFlash, setPayAmountFlash] = useState(false);
 
   const pay = INSTAPAY[other] || {};
   const hasDirectLink = !!pay.url;
+
+  const hasOutboundPending = pendingOutbound.some((s) => s.status === 'pending');
+  const hasOutboundSent = pendingOutbound.some((s) => s.status === 'sent');
+  const inboundSent = pendingInbound.find((s) => s.status === 'sent');
+  const hasPairFlow =
+    pendingOutbound.length > 0 || pendingInbound.length > 0;
 
   function handleCopyIpa() {
     if (!pay.username) return;
@@ -120,7 +155,7 @@ function DebtCard({ currentUser, debt, t, shortName }) {
   }
 
   const hasDebt = iOwe > 0.005 || theyOwe > 0.005;
-  if (!hasDebt && !pendingSettlement) {
+  if (!hasDebt && !hasPairFlow) {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center justify-between">
@@ -131,18 +166,19 @@ function DebtCard({ currentUser, debt, t, shortName }) {
     );
   }
 
-  const status = pendingSettlement?.status;
-  const iAmDebtor = pendingSettlement?.from === currentUser;
+  const showPayAndMarkSent =
+    additionalIOwe > 0.005 || hasOutboundPending;
 
   async function handleMarkSent() {
     if (confirmSent) {
-      if (pendingSettlement) {
-        updateSettlementStatus(pendingSettlement.fbKey, 'sent');
-      } else if (iOwe > 0.005) {
+      const toActivate = pendingOutbound.filter((s) => s.status === 'pending');
+      if (toActivate.length > 0) {
+        toActivate.forEach((s) => updateSettlementStatus(s.fbKey, 'sent'));
+      } else if (additionalIOwe > 0.005) {
         await addSettlement({
           from: currentUser,
           to: other,
-          amount: iOwe,
+          amount: additionalIOwe,
           status: 'sent',
           createdAt: Date.now(),
           sentAt: Date.now(),
@@ -156,8 +192,8 @@ function DebtCard({ currentUser, debt, t, shortName }) {
   }
 
   function handleConfirmReceived() {
-    if (!pendingSettlement) return;
-    updateSettlementStatus(pendingSettlement.fbKey, 'settled');
+    if (!inboundSent) return;
+    updateSettlementStatus(inboundSent.fbKey, 'settled');
   }
 
   return (
@@ -183,24 +219,38 @@ function DebtCard({ currentUser, debt, t, shortName }) {
           ) : null}
         </div>
 
-        {/* Status row */}
-        {pendingSettlement && (
-          <div className={`mb-3 flex items-center gap-2 rounded-xl p-2.5 text-xs font-medium ${
-            status === 'sent'
-              ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
-              : 'bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400'
-          }`}>
-            {status === 'pending' && (
-              <><Clock size={13} /> {iAmDebtor ? t('dashNotSentYet') : t('dashWaitingFor', { name: shortName(pendingSettlement.from) })}</>
+        {/* Status row — outbound (you owe / you sent) */}
+        {pendingOutbound.length > 0 && (
+          <div className="mb-3 space-y-2">
+            {hasOutboundPending && (
+              <div className="flex items-center gap-2 rounded-xl bg-gray-100 p-2.5 text-xs font-medium text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
+                <Clock size={13} /> {t('dashNotSentYet')}
+              </div>
             )}
-            {status === 'sent' && (
-              <><Send size={13} /> {iAmDebtor ? t('dashYouSent') : t('dashSentBy', { name: shortName(pendingSettlement.from) })}</>
+            {hasOutboundSent && (
+              <div className="flex flex-col gap-1 rounded-xl bg-amber-50 p-2.5 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                <span className="flex items-center gap-2">
+                  <Send size={13} /> {t('dashYouSent')} ({sentOutboundTotal.toFixed(0)})
+                </span>
+                {additionalIOwe > 0.005 && (
+                  <span className="font-semibold text-amber-800 dark:text-amber-200">
+                    {t('dashStillToSend', { amount: additionalIOwe.toFixed(0) })}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         )}
 
-        {/* IPA address for copy (only when no direct link and not yet sent) */}
-        {iOwe > 0.005 && !hasDirectLink && status !== 'sent' && (
+        {/* Inbound: they marked sent to you */}
+        {inboundSent && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl bg-amber-50 p-2.5 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+            <Send size={13} /> {t('dashSentBy', { name: shortName(inboundSent.from) })}
+          </div>
+        )}
+
+        {/* IPA address for copy (only when no direct link and you still have an amount to send) */}
+        {additionalIOwe > 0.005 && !hasDirectLink && (
           <div className="mb-3 flex items-center justify-between rounded-xl bg-gray-100 px-3 py-2 dark:bg-gray-700/50">
             <span className="text-xs font-mono font-medium text-gray-600 dark:text-gray-300">{pay.username}@instapay</span>
             <button
@@ -219,19 +269,19 @@ function DebtCard({ currentUser, debt, t, shortName }) {
         {/* Action buttons */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
-          {/* Pay button — hide after marking sent */}
-          {iOwe > 0.005 && status !== 'sent' && (
+          {/* Pay — amount still to send after prior "sent" rows */}
+          {additionalIOwe > 0.005 && (
             <a
               href={
                 hasDirectLink
-                  ? buildInstapayPayUrl(pay.url, iOwe)
+                  ? buildInstapayPayUrl(pay.url, additionalIOwe)
                   : 'https://play.google.com/store/apps/details?id=com.egyptianbanks.instapay'
               }
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => {
-                if (hasDirectLink && iOwe > 0.005) {
-                  void navigator.clipboard.writeText(iOwe.toFixed(2));
+                if (hasDirectLink && additionalIOwe > 0.005) {
+                  void navigator.clipboard.writeText(additionalIOwe.toFixed(2));
                   setPayAmountFlash(true);
                   window.setTimeout(() => setPayAmountFlash(false), 3500);
                 }
@@ -242,8 +292,8 @@ function DebtCard({ currentUser, debt, t, shortName }) {
             </a>
           )}
 
-          {/* "I Sent It" — show when owing and not yet marked sent */}
-          {iOwe > 0.005 && status !== 'sent' && (
+          {/* "I Sent It" — archive pending rows or extra amount after a sent row */}
+          {showPayAndMarkSent && (
             <button
               onClick={handleMarkSent}
               className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-xs font-semibold transition active:scale-95 ${
@@ -256,15 +306,15 @@ function DebtCard({ currentUser, debt, t, shortName }) {
             </button>
           )}
 
-          {/* After you sent — waiting for other side */}
-          {iAmDebtor && status === 'sent' && (
+          {/* After you sent — waiting for other side (any outbound marked sent) */}
+          {hasOutboundSent && (
             <div className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-amber-50 text-xs font-medium text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
               <Clock size={13} /> {t('dashWaitingConfirm', { name: shortName(other) })}
             </div>
           )}
 
-          {/* Other side confirms receipt */}
-          {pendingSettlement && !iAmDebtor && status === 'sent' && (
+          {/* You receive — confirm one pending transfer at a time */}
+          {inboundSent && (
             <button
               onClick={handleConfirmReceived}
               className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 text-xs font-semibold text-white shadow-sm transition active:scale-95 hover:bg-emerald-600"
@@ -274,7 +324,7 @@ function DebtCard({ currentUser, debt, t, shortName }) {
           )}
 
           {/* They owe you — waiting for them */}
-          {theyOwe > 0.005 && !pendingSettlement && (
+          {theyOwe > 0.005 && !inboundSent && (
             <div className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-gray-100 text-xs font-medium text-gray-400 dark:bg-gray-700/50 dark:text-gray-500">
               <Clock size={13} /> {t('dashWaiting')}
             </div>

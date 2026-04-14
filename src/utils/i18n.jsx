@@ -131,6 +131,7 @@ const translations = {
     dashConfirmReceived: 'Confirm Received',
     dashWaiting: 'Waiting for them',
     dashWaitingConfirm: 'Waiting for {name} to confirm',
+    dashStillToSend: 'Still to send: {amount}',
     dashHint:
       'Numbers include all expenses (archive too) and follow the app settlement plan. They drop only after someone confirms they received the payment.',
 
@@ -248,6 +249,7 @@ const translations = {
     dashConfirmReceived: 'وصلتني ✓',
     dashWaiting: 'مستنيهم يبعتوا',
     dashWaitingConfirm: 'مستني {name} يأكد الاستلام',
+    dashStillToSend: 'لسه تبعت: {amount}',
     dashHint:
       'الأرقام على كل المصاريف (حتى اللي في الأرشيف) وحسب خطة التسوية في التطبيق. المبلغ بينقص لما حد يأكد إنه استلم الفلوس.',
 
