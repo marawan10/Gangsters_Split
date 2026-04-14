@@ -85,6 +85,27 @@ export function computeNetBalances(expenses) {
 }
 
 /**
+ * Apply completed (settled) peer-to-peer payments to expense net balances.
+ * `from` paid `to` → debtor net increases, creditor net decreases.
+ * Then computeSettlements(adjusted) matches what is still owed without
+ * subtracting historical settled amounts from a newly recomputed minimal path.
+ */
+export function applySettledToBalances(balances, settlements) {
+  const out = {};
+  USERS.forEach((u) => {
+    out[u] = round2(balances[u] ?? 0);
+  });
+  (settlements || [])
+    .filter((s) => s.status === 'settled')
+    .forEach((s) => {
+      if (!USERS.includes(s.from) || !USERS.includes(s.to)) return;
+      out[s.from] = round2(out[s.from] + s.amount);
+      out[s.to] = round2(out[s.to] - s.amount);
+    });
+  return out;
+}
+
+/**
  * Produce minimal settlement transactions from net balances.
  * Uses greedy algorithm: pair largest debtor with largest creditor.
  *
@@ -133,16 +154,11 @@ export function getDashboardBalanceSoundKind(expenses, archive, settlements, use
   const all = [...expenses, ...archive];
   if (all.length === 0) return null;
 
-  const balances = computeNetBalances(all);
-  const rawSettlementPlan = computeSettlements(balances);
-
-  const settledAmounts = {};
-  USERS.forEach((a) => USERS.forEach((b) => {
-    if (a !== b) settledAmounts[`${a}→${b}`] = 0;
-  }));
-  (settlements || []).filter((s) => s.status === 'settled').forEach((s) => {
-    settledAmounts[`${s.from}→${s.to}`] = (settledAmounts[`${s.from}→${s.to}`] || 0) + s.amount;
-  });
+  const balancesAfterSettled = applySettledToBalances(
+    computeNetBalances(all),
+    settlements,
+  );
+  const rawSettlementPlan = computeSettlements(balancesAfterSettled);
 
   const others = USERS.filter((u) => u !== user);
   let anyIOwe = false;
@@ -156,11 +172,8 @@ export function getDashboardBalanceSoundKind(expenses, archive, settlements, use
       .filter((s) => s.from === other && s.to === user)
       .reduce((sum, s) => sum + s.amount, 0);
 
-    const paidByMe = settledAmounts[`${user}→${other}`] || 0;
-    const paidToMe = settledAmounts[`${other}→${user}`] || 0;
-
-    const iOwe = Math.max(0, Math.round((rawFromMe - paidByMe) * 100) / 100);
-    const theyOwe = Math.max(0, Math.round((rawToMe - paidToMe) * 100) / 100);
+    const iOwe = Math.max(0, Math.round(rawFromMe * 100) / 100);
+    const theyOwe = Math.max(0, Math.round(rawToMe * 100) / 100);
 
     const pendingSettlement = (settlements || []).find(
       (s) => s.status !== 'settled' &&

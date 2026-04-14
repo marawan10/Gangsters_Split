@@ -4,6 +4,7 @@ import {
   computeExpenseBreakdown,
   computeNetBalances,
   computeSettlements,
+  applySettledToBalances,
   getDashboardBalanceSoundKind,
 } from './calculations';
 
@@ -235,6 +236,53 @@ describe('computeNetBalances', () => {
 // ─────────────────────────────────────────────────────────
 // computeSettlements
 // ─────────────────────────────────────────────────────────
+
+describe('applySettledToBalances', () => {
+  it('leaves balances unchanged when there are no settlements', () => {
+    const bal = { [M]: -100, [K]: 40, [B]: 60 };
+    expect(applySettledToBalances(bal, [])).toEqual(bal);
+    expect(applySettledToBalances(bal, null)).toEqual(bal);
+  });
+
+  it('full prior round settled + new 3-way expense → each debtor still owes full new share to creditor', () => {
+    const archive = [
+      { amount: 414, participants: [M, K, B], paidBy: { [B]: 414 } },
+    ];
+    const active = [
+      { amount: 2000, participants: [M, K, B], paidBy: { [B]: 2000 } },
+    ];
+    const all = [...archive, ...active];
+    const settled = [
+      { from: M, to: B, amount: 138, status: 'settled', fbKey: 'a' },
+      { from: K, to: B, amount: 138, status: 'settled', fbKey: 'b' },
+    ];
+    const shares = splitEvenly(2000, 3);
+    const adj = applySettledToBalances(computeNetBalances(all), settled);
+    const plan = computeSettlements(adj);
+    const mToB = plan
+      .filter((s) => s.from === M && s.to === B)
+      .reduce((sum, s) => sum + s.amount, 0);
+    const kToB = plan
+      .filter((s) => s.from === K && s.to === B)
+      .reduce((sum, s) => sum + s.amount, 0);
+    expect(mToB).toBeCloseTo(shares[0], 2);
+    expect(kToB).toBeCloseTo(shares[1], 2);
+  });
+
+  it('after apply, net balances still sum to ~0', () => {
+    const expenses = [
+      { amount: 150, participants: [M, K, B], paidBy: { [B]: 150 } },
+      { amount: 224, participants: [M, K], paidBy: { [K]: 224 } },
+    ];
+    const settled = [
+      { from: M, to: B, amount: 50, status: 'settled', fbKey: 'x' },
+      { from: M, to: K, amount: 112, status: 'settled', fbKey: 'y' },
+    ];
+    const adj = applySettledToBalances(computeNetBalances(expenses), settled);
+    const sum = adj[M] + adj[K] + adj[B];
+    expect(Math.abs(sum)).toBeLessThan(0.02);
+  });
+});
 
 describe('computeSettlements', () => {
   it('simple two-person settlement', () => {

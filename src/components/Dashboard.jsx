@@ -1,7 +1,11 @@
 import { motion } from 'framer-motion';
 import { Copy, CheckCircle, Clock, Send } from 'lucide-react';
 import { USERS, INSTAPAY, buildInstapayPayUrl } from '../utils/constants';
-import { computeNetBalances, computeSettlements } from '../utils/calculations';
+import {
+  applySettledToBalances,
+  computeNetBalances,
+  computeSettlements,
+} from '../utils/calculations';
 import { updateSettlementStatus, addSettlement } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
 import { useState } from 'react';
@@ -10,16 +14,12 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
   const { t, shortName } = useLanguage();
 
   const allExpenses = [...expenses, ...archive];
-  const balances = computeNetBalances(allExpenses);
-  const rawSettlementPlan = computeSettlements(balances);
-
-  const settledAmounts = {};
-  USERS.forEach((a) => USERS.forEach((b) => {
-    if (a !== b) settledAmounts[`${a}→${b}`] = 0;
-  }));
-  settlements.filter((s) => s.status === 'settled').forEach((s) => {
-    settledAmounts[`${s.from}→${s.to}`] = (settledAmounts[`${s.from}→${s.to}`] || 0) + s.amount;
-  });
+  const settlementList = settlements || [];
+  const balancesAfterSettled = applySettledToBalances(
+    computeNetBalances(allExpenses),
+    settlementList,
+  );
+  const rawSettlementPlan = computeSettlements(balancesAfterSettled);
 
   const others = USERS.filter((u) => u !== currentUser);
 
@@ -31,13 +31,10 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
       .filter((s) => s.from === other && s.to === currentUser)
       .reduce((sum, s) => sum + s.amount, 0);
 
-    const paidByMe = settledAmounts[`${currentUser}→${other}`] || 0;
-    const paidToMe = settledAmounts[`${other}→${currentUser}`] || 0;
+    const iOwe = Math.max(0, Math.round(rawFromMe * 100) / 100);
+    const theyOwe = Math.max(0, Math.round(rawToMe * 100) / 100);
 
-    const iOwe = Math.max(0, Math.round((rawFromMe - paidByMe) * 100) / 100);
-    const theyOwe = Math.max(0, Math.round((rawToMe - paidToMe) * 100) / 100);
-
-    const pendingSettlement = settlements.find(
+    const pendingSettlement = settlementList.find(
       (s) => s.status !== 'settled' &&
         ((s.from === currentUser && s.to === other) ||
          (s.from === other && s.to === currentUser)),
