@@ -5,7 +5,7 @@ import {
   applySettledToBalances,
   computeNetBalances,
   computeSettlements,
-  round2,
+  getPairSettlementUiState,
 } from '../utils/calculations';
 import { updateSettlementStatus, addSettlement } from '../utils/firebase';
 import { useLanguage } from '../utils/i18n';
@@ -35,23 +35,18 @@ export default function Dashboard({ currentUser, expenses, archive, settlements 
     const iOwe = Math.max(0, Math.round(rawFromMe * 100) / 100);
     const theyOwe = Math.max(0, Math.round(rawToMe * 100) / 100);
 
-    const pendingOutbound = settlementList.filter(
-      (s) => s.status !== 'settled' &&
-        s.from === currentUser &&
-        s.to === other,
+    const {
+      pendingOutbound,
+      pendingInbound,
+      sentOutboundTotal,
+      additionalIOwe,
+    } = getPairSettlementUiState(
+      currentUser,
+      other,
+      iOwe,
+      theyOwe,
+      settlementList,
     );
-    const pendingInbound = settlementList.filter(
-      (s) => s.status !== 'settled' &&
-        s.from === other &&
-        s.to === currentUser,
-    );
-    const sentOutboundTotal = round2(
-      pendingOutbound
-        .filter((s) => s.status === 'sent')
-        .reduce((sum, s) => sum + s.amount, 0),
-    );
-    /** Owed on top of what you already marked "sent" (waiting for their confirm). */
-    const additionalIOwe = Math.max(0, round2(iOwe - sentOutboundTotal));
 
     return {
       other,

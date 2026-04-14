@@ -105,6 +105,67 @@ export function applySettledToBalances(balances, settlements) {
   return out;
 }
 
+/** Sent amounts more than this above current plan debt are treated as stale (e.g. expenses deleted). */
+const STALE_SENT_TOL = 0.02;
+
+/**
+ * Per-pair settlement rows for the dashboard: drops orphan "sent" rows that no longer
+ * match expense-based iOwe/theyOwe (Firebase rows are not deleted when expenses are).
+ */
+export function getPairSettlementUiState(currentUser, other, iOwe, theyOwe, settlements) {
+  const list = settlements || [];
+  const pendingOutboundAll = list.filter(
+    (s) => s.status !== 'settled' && s.from === currentUser && s.to === other,
+  );
+  const pendingInboundAll = list.filter(
+    (s) => s.status !== 'settled' && s.from === other && s.to === currentUser,
+  );
+
+  const rawSentOutboundTotal = round2(
+    pendingOutboundAll
+      .filter((s) => s.status === 'sent')
+      .reduce((sum, s) => sum + s.amount, 0),
+  );
+  const staleOutboundSent = rawSentOutboundTotal > iOwe + STALE_SENT_TOL;
+
+  const rawInboundSentTotal = round2(
+    pendingInboundAll
+      .filter((s) => s.status === 'sent')
+      .reduce((sum, s) => sum + s.amount, 0),
+  );
+  const staleInboundSent = rawInboundSentTotal > theyOwe + STALE_SENT_TOL;
+
+  const pairHasDebt = iOwe > 0.005 || theyOwe > 0.005;
+
+  let pendingOutbound;
+  let pendingInbound;
+  if (!pairHasDebt) {
+    pendingOutbound = [];
+    pendingInbound = [];
+  } else {
+    pendingOutbound = staleOutboundSent
+      ? pendingOutboundAll.filter((s) => s.status !== 'sent')
+      : pendingOutboundAll;
+    pendingInbound = staleInboundSent
+      ? pendingInboundAll.filter((s) => s.status !== 'sent')
+      : pendingInboundAll;
+  }
+
+  const sentOutboundTotal = round2(
+    pendingOutbound
+      .filter((s) => s.status === 'sent')
+      .reduce((sum, s) => sum + s.amount, 0),
+  );
+  const additionalIOwe = Math.max(0, round2(iOwe - sentOutboundTotal));
+
+  return {
+    pendingOutbound,
+    pendingInbound,
+    sentOutboundTotal,
+    additionalIOwe,
+  };
+}
+
 /**
  * Produce minimal settlement transactions from net balances.
  * Uses greedy algorithm: pair largest debtor with largest creditor.
@@ -175,20 +236,25 @@ export function getDashboardBalanceSoundKind(expenses, archive, settlements, use
     const iOwe = Math.max(0, Math.round(rawFromMe * 100) / 100);
     const theyOwe = Math.max(0, Math.round(rawToMe * 100) / 100);
 
-    const pendingSettlement = (settlements || []).find(
-      (s) => s.status !== 'settled' &&
-        ((s.from === user && s.to === other) ||
-          (s.from === other && s.to === user)),
+    const { pendingOutbound, pendingInbound } = getPairSettlementUiState(
+      user,
+      other,
+      iOwe,
+      theyOwe,
+      settlements,
     );
+    const anyRelevantPending =
+      pendingOutbound.length > 0 || pendingInbound.length > 0;
 
     const hasDebt = iOwe > 0.005 || theyOwe > 0.005;
-    const allClear = !hasDebt && !pendingSettlement;
+    const allClear = !hasDebt && !anyRelevantPending;
     if (allClear) continue;
 
     if (iOwe > 0.005) anyIOwe = true;
     if (theyOwe > 0.005) anyTheyOwe = true;
-    if (pendingSettlement && !hasDebt) {
-      if (pendingSettlement.from === user) anyIOwe = true;
+    if (anyRelevantPending && !hasDebt) {
+      const iAmDebtorSide = pendingOutbound.length > 0;
+      if (iAmDebtorSide) anyIOwe = true;
       else anyTheyOwe = true;
     }
   }

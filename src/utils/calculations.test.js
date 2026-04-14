@@ -5,6 +5,7 @@ import {
   computeNetBalances,
   computeSettlements,
   applySettledToBalances,
+  getPairSettlementUiState,
   getDashboardBalanceSoundKind,
 } from './calculations';
 
@@ -281,6 +282,36 @@ describe('applySettledToBalances', () => {
     const adj = applySettledToBalances(computeNetBalances(expenses), settled);
     const sum = adj[M] + adj[K] + adj[B];
     expect(Math.abs(sum)).toBeLessThan(0.02);
+  });
+});
+
+describe('getPairSettlementUiState', () => {
+  it('hides orphan sent + waiting UI when plan says you owe 0 (expenses removed)', () => {
+    const settlements = [
+      { from: M, to: B, amount: 692, status: 'sent', fbKey: 'x' },
+    ];
+    const r = getPairSettlementUiState(M, B, 0, 0, settlements);
+    expect(r.pendingOutbound).toEqual([]);
+    expect(r.pendingInbound).toEqual([]);
+    expect(r.additionalIOwe).toBe(0);
+  });
+
+  it('ignores oversized sent total when new debt is smaller (fresh pay amount)', () => {
+    const settlements = [
+      { from: M, to: B, amount: 692, status: 'sent', fbKey: 'x' },
+    ];
+    const r = getPairSettlementUiState(M, B, 50, 0, settlements);
+    expect(r.pendingOutbound.every((s) => s.status !== 'sent')).toBe(true);
+    expect(r.additionalIOwe).toBe(50);
+  });
+
+  it('keeps sent rows when they match current iOwe', () => {
+    const settlements = [
+      { from: M, to: B, amount: 50, status: 'sent', fbKey: 'x' },
+    ];
+    const r = getPairSettlementUiState(M, B, 50, 0, settlements);
+    expect(r.pendingOutbound).toHaveLength(1);
+    expect(r.additionalIOwe).toBe(0);
   });
 });
 
